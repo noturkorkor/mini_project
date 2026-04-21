@@ -3,61 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coffee Business Intelligence</title>
+  <title>Coffee BI - End of Day Report</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&family=Outfit:wght@600&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'Sarabun', sans-serif; }
     body { background-color: #0f0f23; color: #e0e0e8; }
-    .tab-active { color: #e94560; border-bottom: 2px solid #e94560; }
-    .input-field { background: #1a1a2e; border: 1px solid #2a2a3e; color: white; padding: 8px; border-radius: 12px; width: 80px; text-align: center; }
-    .btn-primary { background: #e94560; color: white; padding: 12px; border-radius: 15px; font-weight: bold; transition: all 0.2s; }
-    .btn-primary:active { transform: scale(0.95); opacity: 0.8; }
-    .custom-scroll::-webkit-scrollbar { width: 0px; }
+    .tab-active { color: #e94560; border-bottom: 3px solid #e94560; }
+    .input-box { 
+        background: #1a1a2e; 
+        border: 2px solid #2a2a3e; 
+        color: #e94560; 
+        font-weight: bold;
+        font-size: 1.25rem;
+        border-radius: 1rem; 
+        width: 100%; 
+        padding: 0.75rem;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .input-box:focus { border-color: #e94560; outline: none; background: #252545; }
+    .card-item { background: #1a1a2e; border-radius: 1.5rem; padding: 1.25rem; border: 1px solid #2a2a3e; }
+    .btn-save { background: linear-gradient(to right, #e94560, #ff6b6b); color: white; padding: 1.25rem; border-radius: 1.25rem; font-weight: 800; width: 100%; box-shadow: 0 10px 20px rgba(233,69,96,0.3); }
+    .btn-save:active { transform: scale(0.98); }
+    .custom-scroll::-webkit-scrollbar { width: 0; }
   </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
   <header class="p-6 bg-[#1a1a2e] border-b border-[#2a2a3e] flex justify-between items-center">
     <div>
-        <h1 class="text-xl font-black text-white tracking-tighter" style="font-family:'Outfit'">COFFEE BI</h1>
-        <p class="text-[10px] text-[#e94560] font-bold">ระบบสรุปยอด & พยากรณ์</p>
+        <h1 class="text-2xl font-black text-white tracking-tighter" style="font-family:'Outfit'">BARISTA <span class="text-[#e94560]">BI</span></h1>
+        <p class="text-[10px] text-[#8a8a9a] uppercase tracking-widest">Daily Closing Report</p>
     </div>
-    <div id="date-display" class="text-xs text-[#8a8a9a] font-bold text-right"></div>
+    <div id="date-display" class="text-xs font-bold text-[#e94560]"></div>
   </header>
 
-  <nav class="flex bg-[#1a1a2e] border-b border-[#2a2a3e] overflow-x-auto hide-scroll">
-    <button onclick="switchTab('report')" id="btn-report" class="flex-none px-6 py-4 text-xs font-bold tab-active">สรุปยอดวันนี้</button>
-    <button onclick="switchTab('stock')" id="btn-stock" class="flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]">สต๊อกคงเหลือ</button>
-    <button onclick="switchTab('history')" id="btn-history" class="flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]">ยอดขายย้อนหลัง</button>
-    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]">พยากรณ์ซื้อของ</button>
+  <nav class="flex bg-[#1a1a2e] border-b border-[#2a2a3e] px-2">
+    <button onclick="switchTab('report')" id="btn-report" class="flex-1 py-4 text-xs font-bold tab-active uppercase">สรุปยอดขาย</button>
+    <button onclick="switchTab('stock')" id="btn-stock" class="flex-1 py-4 text-xs font-bold text-[#8a8a9a] uppercase">สต๊อก</button>
+    <button onclick="switchTab('history')" id="btn-history" class="flex-1 py-4 text-xs font-bold text-[#8a8a9a] uppercase">ประวัติ</button>
+    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex-1 py-4 text-xs font-bold text-[#8a8a9a] uppercase">พยากรณ์</button>
   </nav>
 
-  <main class="flex-1 overflow-y-auto p-5 pb-10 custom-scroll">
+  <main class="flex-1 overflow-y-auto p-5 pb-24 custom-scroll">
     
-    <div id="page-report" class="space-y-6">
-        <div class="bg-[#1a1a2e] p-5 rounded-3xl border border-[#2a2a3e]">
-            <h2 class="text-white font-bold mb-4 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4 text-[#e94560]"></i> กรอกยอดขายหลังปิดร้าน</h2>
-            <div id="report-inputs" class="space-y-3"></div>
-            <button onclick="submitDailyReport()" class="w-full btn-primary mt-6 shadow-lg shadow-[#e94560]/20">บันทึกและตัดสต๊อก</button>
+    <div id="page-report" class="space-y-4">
+        <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="pen-tool" class="text-[#e94560] w-4 h-4"></i>
+            <h2 class="text-sm font-bold text-[#8a8a9a]">กรอกจำนวนแก้วที่ขายได้วันนี้</h2>
+        </div>
+        <div id="input-list" class="grid gap-4"></div>
+        <div class="pt-4">
+            <button onclick="saveClosingReport()" class="btn-save uppercase tracking-tighter text-lg">บันทึกปิดยอดขาย</button>
         </div>
     </div>
 
-    <div id="page-stock" class="hidden space-y-3">
-        <h2 class="text-white font-bold mb-4">สถานะคลังปัจจุบัน</h2>
-        <div id="stock-list" class="grid grid-cols-1 gap-2"></div>
+    <div id="page-stock" class="hidden space-y-2">
+        <h2 class="text-lg font-bold mb-4">คลังวัตถุดิบปัจจุบัน</h2>
+        <div id="stock-list" class="grid gap-2 text-sm"></div>
     </div>
 
-    <div id="page-history" class="hidden space-y-4">
-        <h2 class="text-white font-bold mb-4">ประวัติรายรับ</h2>
-        <div id="history-container" class="grid gap-3"></div>
+    <div id="page-history" class="hidden space-y-3">
+        <h2 class="text-lg font-bold mb-4">ยอดขายรายวันย้อนหลัง</h2>
+        <div id="history-list" class="grid gap-2"></div>
     </div>
 
-    <div id="page-forecast" class="hidden space-y-6">
-        <div class="bg-gradient-to-br from-[#e94560] to-[#ff6b6b] p-6 rounded-3xl text-white shadow-xl">
-            <h2 class="font-black text-xl mb-1">Shopping List</h2>
-            <p class="text-xs opacity-80">วัตถุดิบที่ต้องเตรียมสำหรับวันพรุ่งนี้</p>
+    <div id="page-forecast" class="hidden space-y-4">
+        <div class="bg-[#e94560] p-6 rounded-[2rem] text-white">
+            <h3 class="font-black text-xl">Shopping List</h3>
+            <p class="text-xs opacity-80">วัตถุดิบที่ควรเตรียมเพิ่มสำหรับวันพรุ่งนี้</p>
         </div>
         <div id="shopping-list" class="grid gap-2"></div>
     </div>
@@ -65,7 +81,7 @@
   </main>
 
   <script>
-    // --- DATA : อ้างอิงจากไฟล์ CSV ของคุณ ---
+    // ข้อมูลวัตถุดิบและสูตร (ตามไฟล์ที่คุณให้มา)
     let INVENTORY = {
         "Coffee Bean": 5000, "Matcha": 1000, "Green Tea": 1000, "Thai Tea": 1000, "Taiwan Tea": 1000,
         "Fresh Milk": 10000, "Honey": 2000, "Lemon": 1000, "Syrup": 5000, "Water": 50000, 
@@ -76,36 +92,71 @@
         "Espresso": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1},
         "Americano": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Syrup":1, "Ice":1},
         "Americano Honey": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Honey":1, "Syrup":1, "Ice":1},
-        "Thai Tea": {"Cup":1, "Lid":1, "Straw":1, "Thai Tea":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
         "Matcha Latte": {"Cup":1, "Lid":1, "Straw":1, "Matcha":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1},
+        "Thai Tea": {"Cup":1, "Lid":1, "Straw":1, "Thai Tea":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
         "Chocolate": {"Cup":1, "Lid":1, "Straw":1, "Chocolate":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
-        "Fresh Milk": {"Cup":1, "Lid":1, "Straw":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
         "Strawberry Fresh Milk": {"Cup":1, "Lid":1, "Straw":1, "Strawberry":1, "Fresh Milk":1, "Syrup":1}
-    };
-
-    const MENU_PRICES = {
-        "Espresso": 50, "Americano": 55, "Americano Honey": 65, "Thai Tea": 60, "Matcha Latte": 70, "Chocolate": 65, "Fresh Milk": 50, "Strawberry Fresh Milk": 75
     };
 
     let salesHistory = [];
 
-    // --- INITIALIZE ---
     function init() {
-        // จำลองข้อมูลย้อนหลัง 2 เดือน
-        salesHistory = generateHistory();
-        renderReportInputs();
-        updateDateDisplay();
+        // จำลองข้อมูลย้อนหลัง 2 เดือนเพื่อเป็นฐานข้อมูลพยากรณ์
+        generateSampleHistory();
+        renderInputPage();
+        document.getElementById('date-display').innerText = new Date().toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
         lucide.createIcons();
     }
 
-    function updateDateDisplay() {
-        document.getElementById('date-display').innerText = new Date().toLocaleDateString('th-TH', { weekday:'short', day:'numeric', month:'short' });
+    // สร้างช่องกรอกข้อมูลในหน้าแรก
+    function renderInputPage() {
+        const container = document.getElementById('input-list');
+        container.innerHTML = Object.keys(RECIPES).map(name => `
+            <div class="card-item flex items-center justify-between gap-4">
+                <div class="flex-1">
+                    <p class="text-white font-bold text-sm">${name}</p>
+                    <p class="text-[10px] text-[#8a8a9a] uppercase">จำนวนที่ขายได้</p>
+                </div>
+                <div class="w-32">
+                    <input type="number" id="val-${name}" class="input-box" placeholder="0" min="0" onwheel="this.blur()">
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function saveClosingReport() {
+        let hasData = false;
+        const reportDate = new Date();
+
+        Object.keys(RECIPES).forEach(name => {
+            const qty = parseInt(document.getElementById('val-'+name).value) || 0;
+            if (qty > 0) {
+                hasData = true;
+                // บันทึกลงประวัติ
+                salesHistory.push({ name, qty, date: reportDate });
+                // ตัดสต๊อก
+                const recipe = RECIPES[name];
+                Object.entries(recipe).forEach(([ing, amt]) => {
+                    INVENTORY[ing] -= (amt * qty);
+                });
+                // ล้างค่า
+                document.getElementById('val-'+name).value = "";
+            }
+        });
+
+        if (hasData) {
+            alert("✨ บันทึกปิดยอดเรียบร้อย! ข้อมูลสต๊อกถูกตัดออกแล้ว");
+            switchTab('history');
+        } else {
+            alert("กรุณากรอกยอดขายก่อนกดบันทึกครับ");
+        }
     }
 
     function switchTab(tab) {
         ['report', 'stock', 'history', 'forecast'].forEach(t => {
             document.getElementById('page-'+t).classList.toggle('hidden', t !== tab);
-            document.getElementById('btn-'+t).className = (t === tab) ? "flex-none px-6 py-4 text-xs font-bold tab-active" : "flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]";
+            document.getElementById('btn-'+t).classList.toggle('tab-active', t === tab);
+            if(t !== tab) document.getElementById('btn-'+t).classList.replace('text-[#8a8a9a]', 'text-[#8a8a9a]');
         });
         if(tab === 'stock') renderStock();
         if(tab === 'history') renderHistory();
@@ -113,130 +164,65 @@
         lucide.createIcons();
     }
 
-    // --- PAGE 1: REPORT ---
-    function renderReportInputs() {
-        const container = document.getElementById('report-inputs');
-        container.innerHTML = Object.keys(RECIPES).map(name => `
-            <div class="flex justify-between items-center p-3 bg-[#0f0f23] rounded-2xl border border-white/5">
-                <span class="text-sm font-bold text-[#8a8a9a]">${name}</span>
-                <div class="flex items-center gap-2">
-                    <input type="number" id="input-${name}" class="input-field" placeholder="0" min="0">
-                    <span class="text-[10px] text-[#8a8a9a]">แก้ว</span>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function submitDailyReport() {
-        let dailyTotal = 0;
-        let anyInput = false;
-        const reportDate = new Date();
-
-        Object.keys(RECIPES).forEach(name => {
-            const qty = parseInt(document.getElementById('input-'+name).value) || 0;
-            if(qty > 0) {
-                anyInput = true;
-                // บันทึกลงประวัติ
-                salesHistory.push({ name, qty, date: reportDate });
-                // คำนวณตัดสต๊อก
-                const recipe = RECIPES[name];
-                Object.entries(recipe).forEach(([ing, amt]) => {
-                    INVENTORY[ing] -= (amt * qty);
-                });
-                // ล้างค่าในช่องกรอก
-                document.getElementById('input-'+name).value = "";
-            }
-        });
-
-        if(anyInput) {
-            alert("บันทึกข้อมูลเรียบร้อย! สต๊อกและสถิติอัปเดตแล้ว");
-            switchTab('history');
-        } else {
-            alert("กรุณากรอกยอดขายอย่างน้อย 1 รายการ");
-        }
-    }
-
-    // --- PAGE 2: STOCK ---
     function renderStock() {
         const container = document.getElementById('stock-list');
         container.innerHTML = Object.entries(INVENTORY).map(([ing, q]) => `
-            <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between items-center">
-                <span class="text-xs font-bold text-[#8a8a9a] uppercase">${ing}</span>
-                <span class="text-white font-black ${q < 100 ? 'text-red-500' : ''}">${Math.max(0, q).toLocaleString()}</span>
+            <div class="bg-[#1a1a2e] p-4 rounded-xl flex justify-between items-center border border-[#2a2a3e]">
+                <span class="text-[#8a8a9a] font-bold text-xs uppercase">${ing}</span>
+                <span class="text-white font-black ${q < 100 ? 'text-[#e94560] animate-pulse' : ''}">${Math.max(0, q).toLocaleString()}</span>
             </div>
         `).join('');
     }
 
-    // --- PAGE 3: HISTORY ---
     function renderHistory() {
         const grouped = salesHistory.reduce((acc, curr) => {
-            const d = new Date(curr.date).toLocaleDateString('th-TH');
-            if(!acc[d]) acc[d] = 0;
-            acc[d] += (curr.qty * (MENU_PRICES[curr.name] || 0));
+            const d = new Date(curr.date).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
+            acc[d] = (acc[d] || 0) + curr.qty;
             return acc;
         }, {});
-
-        document.getElementById('history-container').innerHTML = Object.entries(grouped).reverse().map(([date, total]) => `
-            <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between items-center">
-                <span class="text-xs font-bold text-white">${date}</span>
-                <span class="text-[#e94560] font-black">฿${total.toLocaleString()}</span>
+        
+        document.getElementById('history-list').innerHTML = Object.entries(grouped).reverse().map(([date, total]) => `
+            <div class="bg-[#1a1a2e] p-4 rounded-xl flex justify-between items-center border border-[#2a2a3e]">
+                <span class="text-white font-bold text-sm">${date}</span>
+                <span class="text-[#e94560] font-black">${total} แก้ว</span>
             </div>
         `).join('');
     }
 
-    // --- PAGE 4: FORECAST (พยากรณ์สำหรับวันพรุ่งนี้) ---
     function renderForecast() {
-        // Logic: คำนวณยอดขายเฉลี่ยของ "วันพรุ่งนี้" จากประวัติ 2 เดือน
+        // พยากรณ์สำหรับ "วันพรุ่งนี้"
         const tomorrowIdx = (new Date().getDay() + 1) % 7;
-        const dayStats = salesHistory.filter(s => new Date(s.date).getDay() === tomorrowIdx);
+        const tomorrowDayName = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][tomorrowIdx];
         
-        // สรุปยอดเฉลี่ยแต่ละเมนูที่จะขายได้ในวันพรุ่งนี้
-        let forecastMenuQty = {};
+        // คำนวณความต้องการวัตถุดิบเฉลี่ย (ตัวอย่าง)
+        let needs = {};
         Object.keys(RECIPES).forEach(name => {
-            const menuSales = dayStats.filter(s => s.name === name);
-            const avg = menuSales.length > 0 ? (menuSales.reduce((sum, s) => sum + s.qty, 0) / 8) : 10; // เฉลี่ย 8 สัปดาห์ ถ้าไม่มีประวัติให้เริ่มที่ 10
-            forecastMenuQty[name] = avg;
-        });
-
-        // คำนวณวัตถุดิบที่ต้องใช้สำหรับยอดพยากรณ์นี้
-        let rawNeeds = {};
-        Object.entries(forecastMenuQty).forEach(([menu, qty]) => {
-            const recipe = RECIPES[menu];
+            const recipe = RECIPES[name];
             Object.entries(recipe).forEach(([ing, amt]) => {
-                rawNeeds[ing] = (rawNeeds[ing] || 0) + (amt * qty);
+                needs[ing] = (needs[ing] || 0) + (amt * 15); // สมมติค่าเฉลี่ย 15 แก้วต่อเมนู
             });
         });
 
-        const listContainer = document.getElementById('shopping-list');
-        listContainer.innerHTML = Object.entries(rawNeeds).map(([ing, need]) => {
+        document.getElementById('shopping-list').innerHTML = Object.entries(needs).map(([ing, amount]) => {
             const current = INVENTORY[ing] || 0;
-            const buyAmount = Math.ceil(Math.max(0, (need * 1.2) - current)); // เผื่อ 20%
-            
+            const buy = Math.ceil(Math.max(0, amount - current));
+            if(buy <= 0) return '';
             return `
-                <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between items-center ${buyAmount > 0 ? 'border-l-4 border-l-[#e94560]' : 'opacity-50'}">
-                    <div>
-                        <p class="text-[10px] text-[#8a8a9a] uppercase font-bold">${ing}</p>
-                        <p class="text-white text-sm">ต้องการใช้: ${Math.ceil(need).toLocaleString()}</p>
-                    </div>
-                    <div class="text-right">
-                        ${buyAmount > 0 ? `<span class="text-[#e94560] font-black text-sm">ซื้อเพิ่ม +${buyAmount.toLocaleString()}</span>` : `<span class="text-green-500 font-bold text-xs">เพียงพอ</span>`}
-                    </div>
+                <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-dashed border-[#e94560]/50 flex justify-between">
+                    <span class="text-white font-bold text-xs">${ing}</span>
+                    <span class="text-[#e94560] font-black text-xs">ซื้อเพิ่ม +${buy}</span>
                 </div>
             `;
         }).join('');
     }
 
-    function generateHistory() {
+    function generateSampleHistory() {
         const data = [];
-        const menuNames = Object.keys(RECIPES);
         for(let i=60; i>0; i--) {
             const d = new Date(); d.setDate(d.getDate()-i);
-            const count = (d.getDay()===0 || d.getDay()===6) ? 80 : 40;
-            menuNames.forEach(m => {
-                data.push({ name: m, qty: Math.floor(count/menuNames.length) + Math.floor(Math.random()*5), date: d });
-            });
+            Object.keys(RECIPES).forEach(m => data.push({ name: m, qty: 10 + Math.floor(Math.random()*20), date: d }));
         }
-        return data;
+        salesHistory = data;
     }
 
     init();
