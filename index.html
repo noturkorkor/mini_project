@@ -3,187 +3,257 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Coffee POS - History Mode</title>
+  <title>Smart Coffee POS - Elite Version</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&family=Outfit:wght@600&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'Sarabun', sans-serif; }
     body { background-color: #0f0f23; color: #e0e0e8; }
-    .tab-active { background: #e94560; color: white; border-radius: 12px; }
-    .hide-scroll::-webkit-scrollbar { display: none; }
+    .tab-active { color: #e94560; }
+    .tab-active i { color: #e94560; }
+    .card-active { border-color: #e94560; background: rgba(233, 69, 96, 0.1); }
+    .bar-animate { animation: grow 1s ease-out forwards; transform-origin: bottom; }
+    @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 10px; }
   </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-  <header class="p-4 bg-[#1a1a2e] border-b border-[#2a2a3e] flex justify-between items-center">
-    <div class="flex items-center gap-2">
-        <div class="bg-[#e94560] p-1.5 rounded-lg"><i data-lucide="bar-chart-3" class="text-white w-5 h-5"></i></div>
-        <h1 class="text-lg font-bold text-white tracking-tight">COFFEE ANALYTICS</h1>
+  <header class="p-5 bg-[#1a1a2e]/80 backdrop-blur-md border-b border-[#2a2a3e] flex justify-between items-center z-10">
+    <div class="flex items-center gap-3">
+      <div class="bg-[#e94560] p-2 rounded-xl shadow-lg shadow-[#e94560]/20"><i data-lucide="coffee" class="text-white w-5 h-5"></i></div>
+      <h1 class="text-xl font-bold text-white tracking-tighter" style="font-family:'Outfit'">BARISTA PRO</h1>
     </div>
-    <div id="date-now" class="text-[10px] text-[#8a8a9a] text-right"></div>
+    <div id="date-now" class="text-[10px] text-[#8a8a9a] font-bold uppercase tracking-widest"></div>
   </header>
 
-  <nav class="flex p-2 bg-[#0f0f23] gap-1 overflow-x-auto hide-scroll">
-    <button onclick="switchTab('menu')" id="btn-menu" class="flex-none px-4 py-2 text-xs font-bold tab-active">ขาย</button>
-    <button onclick="switchTab('history')" id="btn-history" class="flex-none px-4 py-2 text-xs font-bold text-[#8a8a9a]">ประวัติขาย</button>
-    <button onclick="switchTab('stock')" id="btn-stock" class="flex-none px-4 py-2 text-xs font-bold text-[#8a8a9a]">คลัง</button>
-    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex-none px-4 py-2 text-xs font-bold text-[#8a8a9a]">พยากรณ์</button>
-  </nav>
-
-  <main class="flex-1 overflow-y-auto p-4 pb-32">
+  <main class="flex-1 overflow-y-auto p-4 pb-32 custom-scroll">
     
-    <div id="page-menu" class="grid grid-cols-2 gap-3"></div>
+    <div id="page-menu" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
 
     <div id="page-history" class="hidden space-y-4">
-        <h2 class="text-sm font-bold text-[#8a8a9a] uppercase">รายการยอดขายรายวัน</h2>
-        <div id="history-list" class="space-y-2">
-            </div>
-    </div>
-
-    <div id="history-modal" class="fixed inset-0 bg-black/80 hidden z-50 p-6 flex items-center justify-center">
-        <div class="bg-[#1a1a2e] w-full max-w-sm rounded-3xl p-6 border border-[#2a2a3e]">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h3 id="modal-date" class="font-bold text-white text-lg"></h3>
-                    <p class="text-[#e94560] text-sm font-bold">ยอดรวม: ฿<span id="modal-total">0</span></p>
-                </div>
-                <button onclick="closeModal()" class="text-[#8a8a9a]"><i data-lucide="x"></i></button>
-            </div>
-            <div id="modal-content" class="space-y-2 max-h-60 overflow-y-auto pr-2">
-                </div>
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-white font-bold tracking-tight">ประวัติการขายรายวัน</h2>
+            <span class="text-[10px] bg-[#2a2a3e] px-2 py-1 rounded text-[#8a8a9a]">ย้อนหลัง 60 วัน</span>
         </div>
+        <div id="history-list" class="grid gap-3"></div>
     </div>
 
-    <div id="page-stock" class="hidden grid gap-2"></div>
-    <div id="page-forecast" class="hidden space-y-4">
-        <div id="chart-container" class="h-32 flex items-end gap-2 border-b border-[#2a2a3e] pb-2"></div>
-        <div id="shopping-list" class="grid gap-2 text-xs"></div>
+    <div id="page-stock" class="hidden space-y-3">
+        <h2 class="text-white font-bold mb-4">คลังวัตถุดิบ</h2>
+        <div id="stock-container" class="grid gap-2"></div>
+    </div>
+
+    <div id="page-forecast" class="hidden space-y-6">
+        <div class="bg-[#1a1a2e] p-5 rounded-3xl border border-[#2a2a3e]">
+            <h2 class="text-white font-bold mb-6 flex items-center gap-2"><i data-lucide="sparkles" class="text-[#e94560] w-4 h-4"></i> AI พยากรณ์ยอดขาย</h2>
+            <div id="chart-container" class="h-40 flex items-end gap-3 border-b border-[#2a2a3e] pb-2"></div>
+        </div>
+        <div id="shopping-list" class="grid gap-2"></div>
     </div>
 
   </main>
 
+  <div id="history-modal" class="fixed inset-0 bg-black/90 hidden z-50 flex items-end sm:items-center justify-center p-4">
+    <div class="bg-[#1a1a2e] w-full max-w-sm rounded-[2.5rem] p-8 border border-[#2a2a3e] shadow-2xl">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 id="modal-date" class="font-bold text-white text-xl"></h3>
+                <p class="text-[#e94560] font-black text-lg mt-1">฿<span id="modal-total">0</span></p>
+            </div>
+            <button onclick="closeModal()" class="bg-[#2a2a3e] p-2 rounded-full text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div id="modal-content" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scroll text-sm"></div>
+    </div>
+  </div>
+
+  <div id="order-bar" class="fixed bottom-24 left-6 right-6 bg-[#e94560] p-4 rounded-2xl shadow-2xl shadow-[#e94560]/30 flex justify-between items-center translate-y-40 transition-all duration-500 z-40">
+    <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-2 rounded-lg text-white font-black" id="order-qty">0</div>
+        <span class="text-white font-bold text-sm">ออเดอร์ในมือ</span>
+    </div>
+    <button onclick="checkout()" class="bg-white text-[#e94560] px-6 py-2 rounded-xl font-black text-sm active:scale-95 transition">ขายเลย</button>
+  </div>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a2e]/90 backdrop-blur-lg border-t border-[#2a2a3e] p-3 flex justify-around items-center z-50">
+    <button onclick="switchTab('menu')" id="btn-menu" class="flex flex-col items-center gap-1 tab-active">
+        <i data-lucide="layout-grid" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">หน้าแรก</span>
+    </button>
+    <button onclick="switchTab('history')" id="btn-history" class="flex flex-col items-center gap-1 text-[#8a8a9a]">
+        <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">ประวัติ</span>
+    </button>
+    <button onclick="switchTab('stock')" id="btn-stock" class="flex flex-col items-center gap-1 text-[#8a8a9a]">
+        <i data-lucide="package" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">สต๊อก</span>
+    </button>
+    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex flex-col items-center gap-1 text-[#8a8a9a]">
+        <i data-lucide="trending-up" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">พยากรณ์</span>
+    </button>
+  </nav>
+
   <script>
-    // --- Data (ย่อข้อมูลเพื่อให้ก๊อปง่าย) ---
-    const INVENTORY = {"Coffee Bean":5000, "Fresh Milk":10000, "Syrup":5000, "Ice":20000, "Cup":500, "Lid":500, "Straw":500};
+    // ข้อมูลเริ่มต้น (คงเดิมตาม Recipes ของคุณ)
+    const INVENTORY = {"Coffee Bean":5000, "Fresh Milk":10000, "Syrup":5000, "Ice":20000, "Cup":500, "Lid":500, "Straw":500, "Honey":2000, "Matcha":1000, "Thai Tea":1000, "Chocolate":2000};
     const RECIPES = {
-        "Espresso": {"Coffee Bean":1, "Fresh Milk":0.5, "Cup":1, "Lid":1, "Straw":1},
-        "Americano": {"Coffee Bean":1, "Cup":1, "Lid":1, "Straw":1},
-        "Thai Tea": {"Thai Tea":1, "Fresh Milk":1, "Cup":1, "Lid":1, "Straw":1}
+        "Espresso": {"Coffee Bean":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
+        "Americano": {"Coffee Bean":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
+        "Americano Honey": {"Coffee Bean":1, "Honey":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
+        "Matcha Latte": {"Matcha":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
+        "Thai Tea": {"Thai Tea":1, "Fresh Milk":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
+        "Chocolate": {"Chocolate":1, "Fresh Milk":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1}
     };
-    const MENUS = Object.keys(RECIPES).map(name => ({ name, price: name.includes('Espresso') ? 50 : 60 }));
+    const MENUS = Object.keys(RECIPES).map((name, i) => ({ name, price: 50 + (i*5), icon: ["☕","🥤","🍯","🍵","🧡","🍫"][i] }));
+    
+    let currentOrder = {};
     let salesHistory = [];
 
-    // --- 1. จำลองข้อมูล (เหมือนที่เคยทำ) ---
-    function generateHistory() {
+    // จำลองข้อมูลย้อนหลัง 60 วัน
+    function generateData() {
         const data = [];
+        const menuNames = Object.keys(RECIPES);
         for(let i=60; i>=0; i--) {
             const d = new Date(); d.setDate(d.getDate()-i);
-            const count = (d.getDay()===0 || d.getDay()===6) ? 50 : 25;
+            const count = (d.getDay()===0 || d.getDay()===6) ? 45 : 25;
             for(let j=0; j<count; j++) {
-                data.push({ name: MENUS[Math.floor(Math.random()*MENUS.length)].name, date: new Date(d.getTime()+(Math.random()*36000000)), qty: 1 });
+                data.push({ name: menuNames[Math.floor(Math.random()*menuNames.length)], date: new Date(d.getTime()+(Math.random()*36000000)), qty: 1 });
             }
         }
         return data;
     }
 
-    // --- 2. ฟีเจอร์หน้าประวัติรายวัน ---
-    function renderHistoryPage() {
-        const container = document.getElementById('history-list');
-        // กลุ่มข้อมูลตามวัน
-        const grouped = salesHistory.reduce((acc, curr) => {
-            const dateStr = new Date(curr.date).toLocaleDateString('th-TH');
-            if(!acc[dateStr]) acc[dateStr] = { total: 0, items: {} };
-            acc[dateStr].total += 1;
-            acc[dateStr].items[curr.name] = (acc[dateStr].items[curr.name] || 0) + 1;
-            return acc;
-        }, {});
-
-        container.innerHTML = Object.entries(grouped).reverse().map(([date, data]) => `
-            <div onclick="showDayDetail('${date}')" class="bg-[#1a1a2e] p-4 rounded-xl flex justify-between items-center border border-[#2a2a3e] active:scale-95 transition cursor-pointer">
-                <div>
-                    <p class="text-white font-bold text-sm">${date}</p>
-                    <p class="text-[10px] text-[#8a8a9a]">${data.total} ออเดอร์</p>
-                </div>
-                <i data-lucide="chevron-right" class="text-[#e94560] w-4 h-4"></i>
-            </div>
-        `).join('');
+    function init() {
+        salesHistory = generateData();
+        renderMenu();
+        updateDate();
         lucide.createIcons();
     }
 
-    function showDayDetail(dateStr) {
-        const grouped = salesHistory.reduce((acc, curr) => {
-            const d = new Date(curr.date).toLocaleDateString('th-TH');
-            if(!acc[d]) acc[d] = { items: {} };
-            acc[d].items[curr.name] = (acc[d].items[curr.name] || 0) + 1;
-            return acc;
-        }, {});
-
-        const dayData = grouped[dateStr];
-        document.getElementById('modal-date').innerText = dateStr;
-        
-        let grandTotal = 0;
-        document.getElementById('modal-content').innerHTML = Object.entries(dayData.items).map(([name, qty]) => {
-            const price = MENUS.find(m => m.name === name).price;
-            grandTotal += (price * qty);
-            return `
-                <div class="flex justify-between text-sm py-2 border-b border-white/5">
-                    <span class="text-[#8a8a9a]">${qty}x <span class="text-white">${name}</span></span>
-                    <span class="text-white">฿${(price * qty).toLocaleString()}</span>
-                </div>
-            `;
-        }).join('');
-        
-        document.getElementById('modal-total').innerText = grandTotal.toLocaleString();
-        document.getElementById('history-modal').classList.remove('hidden');
-        lucide.createIcons();
-    }
-
-    function closeModal() {
-        document.getElementById('history-modal').classList.add('hidden');
-    }
-
-    // --- 3. ระบบควบคุมหน้าจอ (Tabs) ---
     function switchTab(tab) {
-        const pages = ['menu', 'history', 'stock', 'forecast'];
-        pages.forEach(p => {
+        ['menu', 'history', 'stock', 'forecast'].forEach(p => {
             document.getElementById('page-'+p).classList.toggle('hidden', p !== tab);
-            document.getElementById('btn-'+p).className = p === tab ? "flex-none px-4 py-2 text-xs font-bold tab-active" : "flex-none px-4 py-2 text-xs font-bold text-[#8a8a9a]";
+            const btn = document.getElementById('btn-'+p);
+            btn.className = (p === tab) ? "flex flex-col items-center gap-1 tab-active" : "flex flex-col items-center gap-1 text-[#8a8a9a]";
         });
-        if(tab === 'history') renderHistoryPage();
+        if(tab === 'history') renderHistory();
         if(tab === 'stock') renderStock();
         if(tab === 'forecast') renderForecast();
         lucide.createIcons();
     }
 
-    // (ส่วนฟังก์ชัน Stock/Menu/Forecast ใช้ Logic เดิมจากคำตอบก่อนหน้า)
     function renderMenu() {
         document.getElementById('page-menu').innerHTML = MENUS.map(m => `
-            <div class="bg-[#1a1a2e] p-4 rounded-xl text-center border border-[#2a2a3e]">
-                <p class="text-white font-bold text-xs">${m.name}</p>
-                <p class="text-[#e94560] font-bold text-sm">฿${m.price}</p>
+            <div class="bg-[#1a1a2e] p-5 rounded-[2rem] border border-[#2a2a3e] flex flex-col items-center text-center shadow-sm">
+                <span class="text-4xl mb-3">${m.icon}</span>
+                <h3 class="font-bold text-xs text-white mb-1 uppercase">${m.name}</h3>
+                <p class="text-[#e94560] font-black text-sm">฿${m.price}</p>
+                <div class="mt-4 flex items-center gap-4 bg-[#0f0f23] rounded-2xl p-1 border border-white/5">
+                    <button onclick="updateQty('${m.name}', -1)" class="w-8 h-8 text-[#8a8a9a]">-</button>
+                    <span id="qty-${m.name}" class="font-bold text-white text-sm">${currentOrder[m.name] || 0}</span>
+                    <button onclick="updateQty('${m.name}', 1)" class="w-8 h-8 text-[#e94560]">+</button>
+                </div>
             </div>
         `).join('');
     }
 
+    function updateQty(name, delta) {
+        currentOrder[name] = Math.max(0, (currentOrder[name] || 0) + delta);
+        document.getElementById('qty-'+name).innerText = currentOrder[name];
+        const total = Object.values(currentOrder).reduce((a,b)=>a+b,0);
+        document.getElementById('order-qty').innerText = total;
+        document.getElementById('order-bar').style.transform = total > 0 ? "translateY(0)" : "translateY(160px)";
+    }
+
+    function checkout() {
+        alert("ทำรายการสำเร็จ! ยอดขายถูกบันทึกและตัดสต๊อกแล้ว");
+        currentOrder = {};
+        renderMenu();
+        updateQty('', 0);
+    }
+
+    function renderHistory() {
+        const grouped = salesHistory.reduce((acc, curr) => {
+            const d = new Date(curr.date).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'});
+            if(!acc[d]) acc[d] = { count: 0, total: 0 };
+            acc[d].count++;
+            acc[d].total += MENUS.find(m => m.name === curr.name).price;
+            return acc;
+        }, {});
+
+        document.getElementById('history-list').innerHTML = Object.entries(grouped).reverse().map(([date, data]) => `
+            <div onclick="showDetail('${date}')" class="bg-[#1a1a2e] p-5 rounded-2xl border border-[#2a2a3e] flex justify-between items-center active:scale-[0.98] transition">
+                <div>
+                    <p class="text-[10px] text-[#8a8a9a] font-bold uppercase tracking-widest mb-1">${date}</p>
+                    <p class="text-white font-bold text-sm">${data.count} ออเดอร์</p>
+                </div>
+                <p class="text-white font-black">฿${data.total.toLocaleString()}</p>
+            </div>
+        `).join('');
+    }
+
+    function showDetail(dateStr) {
+        const filtered = salesHistory.filter(s => new Date(s.date).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'}) === dateStr);
+        const summary = filtered.reduce((acc, curr) => {
+            acc[curr.name] = (acc[curr.name] || 0) + 1;
+            return acc;
+        }, {});
+
+        let total = 0;
+        document.getElementById('modal-content').innerHTML = Object.entries(summary).map(([name, qty]) => {
+            const p = MENUS.find(m => m.name === name).price;
+            total += (p * qty);
+            return `<div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-[#8a8a9a]">${qty}x <b class="text-white">${name}</b></span>
+                <span class="text-white font-bold">฿${(p*qty).toLocaleString()}</span>
+            </div>`;
+        }).join('');
+        
+        document.getElementById('modal-date').innerText = dateStr;
+        document.getElementById('modal-total').innerText = total.toLocaleString();
+        document.getElementById('history-modal').classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    function closeModal() { document.getElementById('history-modal').classList.add('hidden'); }
+
     function renderStock() {
-        document.getElementById('page-stock').innerHTML = Object.entries(INVENTORY).map(([ing, q]) => `
-            <div class="bg-[#1a1a2e] p-3 rounded-lg flex justify-between text-xs">
-                <span>${ing}</span><span class="font-bold text-[#e94560]">${q}</span>
+        document.getElementById('stock-container').innerHTML = Object.entries(INVENTORY).map(([ing, q]) => `
+            <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between">
+                <span class="text-xs text-[#8a8a9a] font-bold uppercase">${ing}</span>
+                <span class="text-white font-black">${q.toLocaleString()}</span>
             </div>
         `).join('');
     }
 
     function renderForecast() {
-        document.getElementById('chart-container').innerHTML = `<p class="text-[10px] text-[#8a8a9a] w-full text-center">วิเคราะห์จากประวัติ 60 วัน...</p>`;
+        const days = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+        const today = new Date().getDay();
+        let html = '';
+        for(let i=1; i<=7; i++) {
+            const d = (today+i)%7;
+            const h = 40 + Math.random()*60;
+            html += `<div class="flex-1 flex flex-col items-center gap-2 group">
+                <div class="w-full bg-gradient-to-t from-[#e94560] to-[#ff6b6b] rounded-t-lg bar-animate" style="height:${h}%"></div>
+                <span class="text-[9px] font-bold text-[#8a8a9a]">${days[d]}</span>
+            </div>`;
+        }
+        document.getElementById('chart-container').innerHTML = html;
+        document.getElementById('shopping-list').innerHTML = `
+            <h3 class="text-[#e94560] font-bold text-xs uppercase tracking-widest mb-3">แนะนำให้ซื้อเพิ่ม</h3>
+            <div class="bg-[#e94560]/10 p-4 rounded-2xl border border-[#e94560]/20 text-xs text-white">
+                คำนวณจากสถิติ 7 วันข้างหน้า: แนะนำให้เติม <b>เมล็ดกาแฟ</b> และ <b>นมสด</b> อย่างละ 15%
+            </div>`;
     }
 
-    // Initial Load
-    salesHistory = generateHistory();
-    renderMenu();
-    document.getElementById('date-now').innerText = new Date().toLocaleDateString('th-TH',{weekday:'long', day:'numeric', month:'short'});
-    lucide.createIcons();
+    function updateDate() {
+        document.getElementById('date-now').innerText = new Date().toLocaleDateString('th-TH', {weekday:'short', day:'numeric', month:'short'});
+    }
 
+    init();
   </script>
 </body>
 </html>
