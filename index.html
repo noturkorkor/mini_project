@@ -3,254 +3,240 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Coffee POS - Elite Version</title>
+  <title>Coffee Business Intelligence</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&family=Outfit:wght@600&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'Sarabun', sans-serif; }
     body { background-color: #0f0f23; color: #e0e0e8; }
-    .tab-active { color: #e94560; }
-    .tab-active i { color: #e94560; }
-    .card-active { border-color: #e94560; background: rgba(233, 69, 96, 0.1); }
-    .bar-animate { animation: grow 1s ease-out forwards; transform-origin: bottom; }
-    @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-    .custom-scroll::-webkit-scrollbar { width: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 10px; }
+    .tab-active { color: #e94560; border-bottom: 2px solid #e94560; }
+    .input-field { background: #1a1a2e; border: 1px solid #2a2a3e; color: white; padding: 8px; border-radius: 12px; width: 80px; text-align: center; }
+    .btn-primary { background: #e94560; color: white; padding: 12px; border-radius: 15px; font-weight: bold; transition: all 0.2s; }
+    .btn-primary:active { transform: scale(0.95); opacity: 0.8; }
+    .custom-scroll::-webkit-scrollbar { width: 0px; }
   </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-  <header class="p-5 bg-[#1a1a2e]/80 backdrop-blur-md border-b border-[#2a2a3e] flex justify-between items-center z-10">
-    <div class="flex items-center gap-3">
-      <div class="bg-[#e94560] p-2 rounded-xl shadow-lg shadow-[#e94560]/20"><i data-lucide="coffee" class="text-white w-5 h-5"></i></div>
-      <h1 class="text-xl font-bold text-white tracking-tighter" style="font-family:'Outfit'">BARISTA PRO</h1>
+  <header class="p-6 bg-[#1a1a2e] border-b border-[#2a2a3e] flex justify-between items-center">
+    <div>
+        <h1 class="text-xl font-black text-white tracking-tighter" style="font-family:'Outfit'">COFFEE BI</h1>
+        <p class="text-[10px] text-[#e94560] font-bold">ระบบสรุปยอด & พยากรณ์</p>
     </div>
-    <div id="date-now" class="text-[10px] text-[#8a8a9a] font-bold uppercase tracking-widest"></div>
+    <div id="date-display" class="text-xs text-[#8a8a9a] font-bold text-right"></div>
   </header>
 
-  <main class="flex-1 overflow-y-auto p-4 pb-32 custom-scroll">
-    
-    <div id="page-menu" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+  <nav class="flex bg-[#1a1a2e] border-b border-[#2a2a3e] overflow-x-auto hide-scroll">
+    <button onclick="switchTab('report')" id="btn-report" class="flex-none px-6 py-4 text-xs font-bold tab-active">สรุปยอดวันนี้</button>
+    <button onclick="switchTab('stock')" id="btn-stock" class="flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]">สต๊อกคงเหลือ</button>
+    <button onclick="switchTab('history')" id="btn-history" class="flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]">ยอดขายย้อนหลัง</button>
+    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]">พยากรณ์ซื้อของ</button>
+  </nav>
 
-    <div id="page-history" class="hidden space-y-4">
-        <div class="flex items-center justify-between mb-2">
-            <h2 class="text-white font-bold tracking-tight">ประวัติการขายรายวัน</h2>
-            <span class="text-[10px] bg-[#2a2a3e] px-2 py-1 rounded text-[#8a8a9a]">ย้อนหลัง 60 วัน</span>
+  <main class="flex-1 overflow-y-auto p-5 pb-10 custom-scroll">
+    
+    <div id="page-report" class="space-y-6">
+        <div class="bg-[#1a1a2e] p-5 rounded-3xl border border-[#2a2a3e]">
+            <h2 class="text-white font-bold mb-4 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4 text-[#e94560]"></i> กรอกยอดขายหลังปิดร้าน</h2>
+            <div id="report-inputs" class="space-y-3"></div>
+            <button onclick="submitDailyReport()" class="w-full btn-primary mt-6 shadow-lg shadow-[#e94560]/20">บันทึกและตัดสต๊อก</button>
         </div>
-        <div id="history-list" class="grid gap-3"></div>
     </div>
 
     <div id="page-stock" class="hidden space-y-3">
-        <h2 class="text-white font-bold mb-4">คลังวัตถุดิบ</h2>
-        <div id="stock-container" class="grid gap-2"></div>
+        <h2 class="text-white font-bold mb-4">สถานะคลังปัจจุบัน</h2>
+        <div id="stock-list" class="grid grid-cols-1 gap-2"></div>
+    </div>
+
+    <div id="page-history" class="hidden space-y-4">
+        <h2 class="text-white font-bold mb-4">ประวัติรายรับ</h2>
+        <div id="history-container" class="grid gap-3"></div>
     </div>
 
     <div id="page-forecast" class="hidden space-y-6">
-        <div class="bg-[#1a1a2e] p-5 rounded-3xl border border-[#2a2a3e]">
-            <h2 class="text-white font-bold mb-6 flex items-center gap-2"><i data-lucide="sparkles" class="text-[#e94560] w-4 h-4"></i> AI พยากรณ์ยอดขาย</h2>
-            <div id="chart-container" class="h-40 flex items-end gap-3 border-b border-[#2a2a3e] pb-2"></div>
+        <div class="bg-gradient-to-br from-[#e94560] to-[#ff6b6b] p-6 rounded-3xl text-white shadow-xl">
+            <h2 class="font-black text-xl mb-1">Shopping List</h2>
+            <p class="text-xs opacity-80">วัตถุดิบที่ต้องเตรียมสำหรับวันพรุ่งนี้</p>
         </div>
         <div id="shopping-list" class="grid gap-2"></div>
     </div>
 
   </main>
 
-  <div id="history-modal" class="fixed inset-0 bg-black/90 hidden z-50 flex items-end sm:items-center justify-center p-4">
-    <div class="bg-[#1a1a2e] w-full max-w-sm rounded-[2.5rem] p-8 border border-[#2a2a3e] shadow-2xl">
-        <div class="flex justify-between items-start mb-6">
-            <div>
-                <h3 id="modal-date" class="font-bold text-white text-xl"></h3>
-                <p class="text-[#e94560] font-black text-lg mt-1">฿<span id="modal-total">0</span></p>
-            </div>
-            <button onclick="closeModal()" class="bg-[#2a2a3e] p-2 rounded-full text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
-        </div>
-        <div id="modal-content" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scroll text-sm"></div>
-    </div>
-  </div>
-
-  <div id="order-bar" class="fixed bottom-24 left-6 right-6 bg-[#e94560] p-4 rounded-2xl shadow-2xl shadow-[#e94560]/30 flex justify-between items-center translate-y-40 transition-all duration-500 z-40">
-    <div class="flex items-center gap-3">
-        <div class="bg-white/20 p-2 rounded-lg text-white font-black" id="order-qty">0</div>
-        <span class="text-white font-bold text-sm">ออเดอร์ในมือ</span>
-    </div>
-    <button onclick="checkout()" class="bg-white text-[#e94560] px-6 py-2 rounded-xl font-black text-sm active:scale-95 transition">ขายเลย</button>
-  </div>
-
-  <nav class="fixed bottom-0 left-0 right-0 bg-[#1a1a2e]/90 backdrop-blur-lg border-t border-[#2a2a3e] p-3 flex justify-around items-center z-50">
-    <button onclick="switchTab('menu')" id="btn-menu" class="flex flex-col items-center gap-1 tab-active">
-        <i data-lucide="layout-grid" class="w-5 h-5"></i>
-        <span class="text-[10px] font-bold">หน้าแรก</span>
-    </button>
-    <button onclick="switchTab('history')" id="btn-history" class="flex flex-col items-center gap-1 text-[#8a8a9a]">
-        <i data-lucide="clipboard-list" class="w-5 h-5"></i>
-        <span class="text-[10px] font-bold">ประวัติ</span>
-    </button>
-    <button onclick="switchTab('stock')" id="btn-stock" class="flex flex-col items-center gap-1 text-[#8a8a9a]">
-        <i data-lucide="package" class="w-5 h-5"></i>
-        <span class="text-[10px] font-bold">สต๊อก</span>
-    </button>
-    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex flex-col items-center gap-1 text-[#8a8a9a]">
-        <i data-lucide="trending-up" class="w-5 h-5"></i>
-        <span class="text-[10px] font-bold">พยากรณ์</span>
-    </button>
-  </nav>
-
   <script>
-    // ข้อมูลเริ่มต้น (คงเดิมตาม Recipes ของคุณ)
-    const INVENTORY = {"Coffee Bean":5000, "Fresh Milk":10000, "Syrup":5000, "Ice":20000, "Cup":500, "Lid":500, "Straw":500, "Honey":2000, "Matcha":1000, "Thai Tea":1000, "Chocolate":2000};
-    const RECIPES = {
-        "Espresso": {"Coffee Bean":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
-        "Americano": {"Coffee Bean":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
-        "Americano Honey": {"Coffee Bean":1, "Honey":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
-        "Matcha Latte": {"Matcha":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
-        "Thai Tea": {"Thai Tea":1, "Fresh Milk":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1},
-        "Chocolate": {"Chocolate":1, "Fresh Milk":1, "Syrup":1, "Ice":1, "Cup":1, "Lid":1, "Straw":1}
+    // --- DATA : อ้างอิงจากไฟล์ CSV ของคุณ ---
+    let INVENTORY = {
+        "Coffee Bean": 5000, "Matcha": 1000, "Green Tea": 1000, "Thai Tea": 1000, "Taiwan Tea": 1000,
+        "Fresh Milk": 10000, "Honey": 2000, "Lemon": 1000, "Syrup": 5000, "Water": 50000, 
+        "Ice": 20000, "Cup": 500, "Lid": 500, "Straw": 500, "Chocolate": 2000, "Strawberry": 2000, "Orange": 2000
     };
-    const MENUS = Object.keys(RECIPES).map((name, i) => ({ name, price: 50 + (i*5), icon: ["☕","🥤","🍯","🍵","🧡","🍫"][i] }));
-    
-    let currentOrder = {};
+
+    const RECIPES = {
+        "Espresso": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1},
+        "Americano": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Syrup":1, "Ice":1},
+        "Americano Honey": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Honey":1, "Syrup":1, "Ice":1},
+        "Thai Tea": {"Cup":1, "Lid":1, "Straw":1, "Thai Tea":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
+        "Matcha Latte": {"Cup":1, "Lid":1, "Straw":1, "Matcha":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1},
+        "Chocolate": {"Cup":1, "Lid":1, "Straw":1, "Chocolate":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
+        "Fresh Milk": {"Cup":1, "Lid":1, "Straw":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
+        "Strawberry Fresh Milk": {"Cup":1, "Lid":1, "Straw":1, "Strawberry":1, "Fresh Milk":1, "Syrup":1}
+    };
+
+    const MENU_PRICES = {
+        "Espresso": 50, "Americano": 55, "Americano Honey": 65, "Thai Tea": 60, "Matcha Latte": 70, "Chocolate": 65, "Fresh Milk": 50, "Strawberry Fresh Milk": 75
+    };
+
     let salesHistory = [];
 
-    // จำลองข้อมูลย้อนหลัง 60 วัน
-    function generateData() {
-        const data = [];
-        const menuNames = Object.keys(RECIPES);
-        for(let i=60; i>=0; i--) {
-            const d = new Date(); d.setDate(d.getDate()-i);
-            const count = (d.getDay()===0 || d.getDay()===6) ? 45 : 25;
-            for(let j=0; j<count; j++) {
-                data.push({ name: menuNames[Math.floor(Math.random()*menuNames.length)], date: new Date(d.getTime()+(Math.random()*36000000)), qty: 1 });
-            }
-        }
-        return data;
-    }
-
+    // --- INITIALIZE ---
     function init() {
-        salesHistory = generateData();
-        renderMenu();
-        updateDate();
+        // จำลองข้อมูลย้อนหลัง 2 เดือน
+        salesHistory = generateHistory();
+        renderReportInputs();
+        updateDateDisplay();
         lucide.createIcons();
     }
 
+    function updateDateDisplay() {
+        document.getElementById('date-display').innerText = new Date().toLocaleDateString('th-TH', { weekday:'short', day:'numeric', month:'short' });
+    }
+
     function switchTab(tab) {
-        ['menu', 'history', 'stock', 'forecast'].forEach(p => {
-            document.getElementById('page-'+p).classList.toggle('hidden', p !== tab);
-            const btn = document.getElementById('btn-'+p);
-            btn.className = (p === tab) ? "flex flex-col items-center gap-1 tab-active" : "flex flex-col items-center gap-1 text-[#8a8a9a]";
+        ['report', 'stock', 'history', 'forecast'].forEach(t => {
+            document.getElementById('page-'+t).classList.toggle('hidden', t !== tab);
+            document.getElementById('btn-'+t).className = (t === tab) ? "flex-none px-6 py-4 text-xs font-bold tab-active" : "flex-none px-6 py-4 text-xs font-bold text-[#8a8a9a]";
         });
-        if(tab === 'history') renderHistory();
         if(tab === 'stock') renderStock();
+        if(tab === 'history') renderHistory();
         if(tab === 'forecast') renderForecast();
         lucide.createIcons();
     }
 
-    function renderMenu() {
-        document.getElementById('page-menu').innerHTML = MENUS.map(m => `
-            <div class="bg-[#1a1a2e] p-5 rounded-[2rem] border border-[#2a2a3e] flex flex-col items-center text-center shadow-sm">
-                <span class="text-4xl mb-3">${m.icon}</span>
-                <h3 class="font-bold text-xs text-white mb-1 uppercase">${m.name}</h3>
-                <p class="text-[#e94560] font-black text-sm">฿${m.price}</p>
-                <div class="mt-4 flex items-center gap-4 bg-[#0f0f23] rounded-2xl p-1 border border-white/5">
-                    <button onclick="updateQty('${m.name}', -1)" class="w-8 h-8 text-[#8a8a9a]">-</button>
-                    <span id="qty-${m.name}" class="font-bold text-white text-sm">${currentOrder[m.name] || 0}</span>
-                    <button onclick="updateQty('${m.name}', 1)" class="w-8 h-8 text-[#e94560]">+</button>
+    // --- PAGE 1: REPORT ---
+    function renderReportInputs() {
+        const container = document.getElementById('report-inputs');
+        container.innerHTML = Object.keys(RECIPES).map(name => `
+            <div class="flex justify-between items-center p-3 bg-[#0f0f23] rounded-2xl border border-white/5">
+                <span class="text-sm font-bold text-[#8a8a9a]">${name}</span>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="input-${name}" class="input-field" placeholder="0" min="0">
+                    <span class="text-[10px] text-[#8a8a9a]">แก้ว</span>
                 </div>
             </div>
         `).join('');
     }
 
-    function updateQty(name, delta) {
-        currentOrder[name] = Math.max(0, (currentOrder[name] || 0) + delta);
-        document.getElementById('qty-'+name).innerText = currentOrder[name];
-        const total = Object.values(currentOrder).reduce((a,b)=>a+b,0);
-        document.getElementById('order-qty').innerText = total;
-        document.getElementById('order-bar').style.transform = total > 0 ? "translateY(0)" : "translateY(160px)";
+    function submitDailyReport() {
+        let dailyTotal = 0;
+        let anyInput = false;
+        const reportDate = new Date();
+
+        Object.keys(RECIPES).forEach(name => {
+            const qty = parseInt(document.getElementById('input-'+name).value) || 0;
+            if(qty > 0) {
+                anyInput = true;
+                // บันทึกลงประวัติ
+                salesHistory.push({ name, qty, date: reportDate });
+                // คำนวณตัดสต๊อก
+                const recipe = RECIPES[name];
+                Object.entries(recipe).forEach(([ing, amt]) => {
+                    INVENTORY[ing] -= (amt * qty);
+                });
+                // ล้างค่าในช่องกรอก
+                document.getElementById('input-'+name).value = "";
+            }
+        });
+
+        if(anyInput) {
+            alert("บันทึกข้อมูลเรียบร้อย! สต๊อกและสถิติอัปเดตแล้ว");
+            switchTab('history');
+        } else {
+            alert("กรุณากรอกยอดขายอย่างน้อย 1 รายการ");
+        }
     }
 
-    function checkout() {
-        alert("ทำรายการสำเร็จ! ยอดขายถูกบันทึกและตัดสต๊อกแล้ว");
-        currentOrder = {};
-        renderMenu();
-        updateQty('', 0);
+    // --- PAGE 2: STOCK ---
+    function renderStock() {
+        const container = document.getElementById('stock-list');
+        container.innerHTML = Object.entries(INVENTORY).map(([ing, q]) => `
+            <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between items-center">
+                <span class="text-xs font-bold text-[#8a8a9a] uppercase">${ing}</span>
+                <span class="text-white font-black ${q < 100 ? 'text-red-500' : ''}">${Math.max(0, q).toLocaleString()}</span>
+            </div>
+        `).join('');
     }
 
+    // --- PAGE 3: HISTORY ---
     function renderHistory() {
         const grouped = salesHistory.reduce((acc, curr) => {
-            const d = new Date(curr.date).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'});
-            if(!acc[d]) acc[d] = { count: 0, total: 0 };
-            acc[d].count++;
-            acc[d].total += MENUS.find(m => m.name === curr.name).price;
+            const d = new Date(curr.date).toLocaleDateString('th-TH');
+            if(!acc[d]) acc[d] = 0;
+            acc[d] += (curr.qty * (MENU_PRICES[curr.name] || 0));
             return acc;
         }, {});
 
-        document.getElementById('history-list').innerHTML = Object.entries(grouped).reverse().map(([date, data]) => `
-            <div onclick="showDetail('${date}')" class="bg-[#1a1a2e] p-5 rounded-2xl border border-[#2a2a3e] flex justify-between items-center active:scale-[0.98] transition">
-                <div>
-                    <p class="text-[10px] text-[#8a8a9a] font-bold uppercase tracking-widest mb-1">${date}</p>
-                    <p class="text-white font-bold text-sm">${data.count} ออเดอร์</p>
-                </div>
-                <p class="text-white font-black">฿${data.total.toLocaleString()}</p>
+        document.getElementById('history-container').innerHTML = Object.entries(grouped).reverse().map(([date, total]) => `
+            <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between items-center">
+                <span class="text-xs font-bold text-white">${date}</span>
+                <span class="text-[#e94560] font-black">฿${total.toLocaleString()}</span>
             </div>
         `).join('');
     }
 
-    function showDetail(dateStr) {
-        const filtered = salesHistory.filter(s => new Date(s.date).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'}) === dateStr);
-        const summary = filtered.reduce((acc, curr) => {
-            acc[curr.name] = (acc[curr.name] || 0) + 1;
-            return acc;
-        }, {});
-
-        let total = 0;
-        document.getElementById('modal-content').innerHTML = Object.entries(summary).map(([name, qty]) => {
-            const p = MENUS.find(m => m.name === name).price;
-            total += (p * qty);
-            return `<div class="flex justify-between border-b border-white/5 pb-2">
-                <span class="text-[#8a8a9a]">${qty}x <b class="text-white">${name}</b></span>
-                <span class="text-white font-bold">฿${(p*qty).toLocaleString()}</span>
-            </div>`;
-        }).join('');
-        
-        document.getElementById('modal-date').innerText = dateStr;
-        document.getElementById('modal-total').innerText = total.toLocaleString();
-        document.getElementById('history-modal').classList.remove('hidden');
-        lucide.createIcons();
-    }
-
-    function closeModal() { document.getElementById('history-modal').classList.add('hidden'); }
-
-    function renderStock() {
-        document.getElementById('stock-container').innerHTML = Object.entries(INVENTORY).map(([ing, q]) => `
-            <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between">
-                <span class="text-xs text-[#8a8a9a] font-bold uppercase">${ing}</span>
-                <span class="text-white font-black">${q.toLocaleString()}</span>
-            </div>
-        `).join('');
-    }
-
+    // --- PAGE 4: FORECAST (พยากรณ์สำหรับวันพรุ่งนี้) ---
     function renderForecast() {
-        const days = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
-        const today = new Date().getDay();
-        let html = '';
-        for(let i=1; i<=7; i++) {
-            const d = (today+i)%7;
-            const h = 40 + Math.random()*60;
-            html += `<div class="flex-1 flex flex-col items-center gap-2 group">
-                <div class="w-full bg-gradient-to-t from-[#e94560] to-[#ff6b6b] rounded-t-lg bar-animate" style="height:${h}%"></div>
-                <span class="text-[9px] font-bold text-[#8a8a9a]">${days[d]}</span>
-            </div>`;
-        }
-        document.getElementById('chart-container').innerHTML = html;
-        document.getElementById('shopping-list').innerHTML = `
-            <h3 class="text-[#e94560] font-bold text-xs uppercase tracking-widest mb-3">แนะนำให้ซื้อเพิ่ม</h3>
-            <div class="bg-[#e94560]/10 p-4 rounded-2xl border border-[#e94560]/20 text-xs text-white">
-                คำนวณจากสถิติ 7 วันข้างหน้า: แนะนำให้เติม <b>เมล็ดกาแฟ</b> และ <b>นมสด</b> อย่างละ 15%
-            </div>`;
+        // Logic: คำนวณยอดขายเฉลี่ยของ "วันพรุ่งนี้" จากประวัติ 2 เดือน
+        const tomorrowIdx = (new Date().getDay() + 1) % 7;
+        const dayStats = salesHistory.filter(s => new Date(s.date).getDay() === tomorrowIdx);
+        
+        // สรุปยอดเฉลี่ยแต่ละเมนูที่จะขายได้ในวันพรุ่งนี้
+        let forecastMenuQty = {};
+        Object.keys(RECIPES).forEach(name => {
+            const menuSales = dayStats.filter(s => s.name === name);
+            const avg = menuSales.length > 0 ? (menuSales.reduce((sum, s) => sum + s.qty, 0) / 8) : 10; // เฉลี่ย 8 สัปดาห์ ถ้าไม่มีประวัติให้เริ่มที่ 10
+            forecastMenuQty[name] = avg;
+        });
+
+        // คำนวณวัตถุดิบที่ต้องใช้สำหรับยอดพยากรณ์นี้
+        let rawNeeds = {};
+        Object.entries(forecastMenuQty).forEach(([menu, qty]) => {
+            const recipe = RECIPES[menu];
+            Object.entries(recipe).forEach(([ing, amt]) => {
+                rawNeeds[ing] = (rawNeeds[ing] || 0) + (amt * qty);
+            });
+        });
+
+        const listContainer = document.getElementById('shopping-list');
+        listContainer.innerHTML = Object.entries(rawNeeds).map(([ing, need]) => {
+            const current = INVENTORY[ing] || 0;
+            const buyAmount = Math.ceil(Math.max(0, (need * 1.2) - current)); // เผื่อ 20%
+            
+            return `
+                <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-[#2a2a3e] flex justify-between items-center ${buyAmount > 0 ? 'border-l-4 border-l-[#e94560]' : 'opacity-50'}">
+                    <div>
+                        <p class="text-[10px] text-[#8a8a9a] uppercase font-bold">${ing}</p>
+                        <p class="text-white text-sm">ต้องการใช้: ${Math.ceil(need).toLocaleString()}</p>
+                    </div>
+                    <div class="text-right">
+                        ${buyAmount > 0 ? `<span class="text-[#e94560] font-black text-sm">ซื้อเพิ่ม +${buyAmount.toLocaleString()}</span>` : `<span class="text-green-500 font-bold text-xs">เพียงพอ</span>`}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
-    function updateDate() {
-        document.getElementById('date-now').innerText = new Date().toLocaleDateString('th-TH', {weekday:'short', day:'numeric', month:'short'});
+    function generateHistory() {
+        const data = [];
+        const menuNames = Object.keys(RECIPES);
+        for(let i=60; i>0; i--) {
+            const d = new Date(); d.setDate(d.getDate()-i);
+            const count = (d.getDay()===0 || d.getDay()===6) ? 80 : 40;
+            menuNames.forEach(m => {
+                data.push({ name: m, qty: Math.floor(count/menuNames.length) + Math.floor(Math.random()*5), date: d });
+            });
+        }
+        return data;
     }
 
     init();
