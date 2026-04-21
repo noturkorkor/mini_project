@@ -1,231 +1,488 @@
 <!doctype html>
-<html lang="th">
-<head>
+<html lang="th" class="h-full">
+ <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coffee BI - End of Day Report</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Coffee Shop Sales</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&family=Outfit:wght@600&display=swap" rel="stylesheet">
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&amp;family=Outfit:wght@400;600;700&amp;display=swap" rel="stylesheet">
   <style>
-    * { font-family: 'Sarabun', sans-serif; }
-    body { background-color: #0f0f23; color: #e0e0e8; }
-    .tab-active { color: #e94560; border-bottom: 3px solid #e94560; }
-    .input-box { 
-        background: #1a1a2e; 
-        border: 2px solid #2a2a3e; 
-        color: #e94560; 
-        font-weight: bold;
-        font-size: 1.25rem;
-        border-radius: 1rem; 
-        width: 100%; 
-        padding: 0.75rem;
-        text-align: center;
-        transition: all 0.3s;
-    }
-    .input-box:focus { border-color: #e94560; outline: none; background: #252545; }
-    .card-item { background: #1a1a2e; border-radius: 1.5rem; padding: 1.25rem; border: 1px solid #2a2a3e; }
-    .btn-save { background: linear-gradient(to right, #e94560, #ff6b6b); color: white; padding: 1.25rem; border-radius: 1.25rem; font-weight: 800; width: 100%; box-shadow: 0 10px 20px rgba(233,69,96,0.3); }
-    .btn-save:active { transform: scale(0.98); }
-    .custom-scroll::-webkit-scrollbar { width: 0; }
+* { font-family: 'Sarabun', sans-serif; }
+body { background: linear-gradient(135deg, #faf8f5 0%, #f3ede4 100%); }
+.tab-active { background: #8b7355; color: #ffffff; border-radius: 12px; }
+.tab-inactive { background: transparent; color: #a89685; }
+.card-base { background: #ffffff; border: 1px solid #e8ddd2; }
+.card-glow:hover { box-shadow: 0 4px 12px rgba(139, 115, 85, 0.08); transform: translateY(-1px); }
+.fade-in { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.pulse-dot { animation: pulse-dot 1.5s infinite; }
+.input-earth { background: #fefdfb; border: 1px solid #e8ddd2; color: #3d3530; }
+.input-earth:focus { border-color: #b8956d; outline: none; }
+.btn-primary { background: #b8956d; color: white; }
+.btn-primary:hover { background: #a5845d; }
+.btn-secondary { background: #e8ddd2; color: #3d3530; }
+.btn-secondary:hover { background: #ddd2c5; }
+.modal-overlay { background: rgba(61, 53, 48, 0.3); backdrop-filter: blur(2px); }
   </style>
-</head>
-<body class="flex flex-col h-screen overflow-hidden">
-
-  <header class="p-6 bg-[#1a1a2e] border-b border-[#2a2a3e] flex justify-between items-center">
-    <div>
-        <h1 class="text-2xl font-black text-white tracking-tighter" style="font-family:'Outfit'">BARISTA <span class="text-[#e94560]">BI</span></h1>
-        <p class="text-[10px] text-[#8a8a9a] uppercase tracking-widest">Daily Closing Report</p>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full bg-[#faf8f5] text-[#3d3530] overflow-auto">
+  <div id="app" class="h-full w-full flex flex-col"><!-- Header -->
+   <header class="flex items-center justify-between px-5 py-4 border-b border-[#e8ddd2] bg-white">
+    <div class="flex items-center gap-3">
+     <div class="w-9 h-9 rounded-lg bg-[#b8956d] flex items-center justify-center"><i data-lucide="coffee" class="w-5 h-5 text-white"></i>
+     </div>
+     <h1 id="shop-name" class="text-lg font-bold text-[#3d3530]" style="font-family:'Outfit',sans-serif">ร้านครัวกาแฟ</h1>
     </div>
-    <div id="date-display" class="text-xs font-bold text-[#e94560]"></div>
-  </header>
-
-  <nav class="flex bg-[#1a1a2e] border-b border-[#2a2a3e] px-2">
-    <button onclick="switchTab('report')" id="btn-report" class="flex-1 py-4 text-xs font-bold tab-active uppercase">สรุปยอดขาย</button>
-    <button onclick="switchTab('stock')" id="btn-stock" class="flex-1 py-4 text-xs font-bold text-[#8a8a9a] uppercase">สต๊อก</button>
-    <button onclick="switchTab('history')" id="btn-history" class="flex-1 py-4 text-xs font-bold text-[#8a8a9a] uppercase">ประวัติ</button>
-    <button onclick="switchTab('forecast')" id="btn-forecast" class="flex-1 py-4 text-xs font-bold text-[#8a8a9a] uppercase">พยากรณ์</button>
-  </nav>
-
-  <main class="flex-1 overflow-y-auto p-5 pb-24 custom-scroll">
-    
-    <div id="page-report" class="space-y-4">
-        <div class="flex items-center gap-2 mb-4">
-            <i data-lucide="pen-tool" class="text-[#e94560] w-4 h-4"></i>
-            <h2 class="text-sm font-bold text-[#8a8a9a]">กรอกจำนวนแก้วที่ขายได้วันนี้</h2>
-        </div>
-        <div id="input-list" class="grid gap-4"></div>
-        <div class="pt-4">
-            <button onclick="saveClosingReport()" class="btn-save uppercase tracking-tighter text-lg">บันทึกปิดยอดขาย</button>
-        </div>
+    <div id="date-display" class="text-sm text-[#a89685]"></div>
+   </header><!-- Tabs -->
+   <nav class="flex gap-1 px-4 pt-4 overflow-x-auto border-b border-[#e8ddd2]"><button onclick="switchTab('sales')" id="tab-sales" class="tab-active px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap"> <i data-lucide="shopping-cart" class="w-4 h-4 inline mr-1"></i>ยอดขาย </button> <button onclick="switchTab('stock')" id="tab-stock" class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap"> <i data-lucide="package" class="w-4 h-4 inline mr-1"></i>สต๊อก </button> <button onclick="switchTab('history')" id="tab-history" class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap"> <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>ประวัติรายวัน </button> <button onclick="switchTab('forecast')" id="tab-forecast" class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap"> <i data-lucide="trending-up" class="w-4 h-4 inline mr-1"></i>พยากรณ์ </button>
+   </nav><!-- Content -->
+   <main class="flex-1 overflow-auto p-4"><!-- Sales Tab -->
+    <div id="page-sales" class="fade-in">
+     <div class="mb-4">
+      <div class="flex justify-between items-center mb-4">
+       <h2 class="font-bold text-[#3d3530] text-lg">บันทึกยอดขายวันนี้</h2><span id="sales-date" class="text-sm text-[#a89685]"></span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" id="sales-grid"></div>
+     </div><button onclick="saveDailySales()" id="save-sales-btn" class="w-full btn-primary py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 mt-6"> <i data-lucide="save" class="w-5 h-5"></i>บันทึกยอดขายวันนี้ </button>
+    </div><!-- Stock Tab -->
+    <div id="page-stock" class="fade-in hidden">
+     <div class="flex items-center justify-between mb-4">
+      <h2 class="font-bold text-[#3d3530] text-lg">วัตถุดิบคงเหลือ</h2><button onclick="showAddStock()" class="btn-primary px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1 transition"> <i data-lucide="plus" class="w-4 h-4"></i>เติมสต๊อก </button>
+     </div>
+     <div id="stock-list" class="space-y-2"></div>
+    </div><!-- History Tab -->
+    <div id="page-history" class="fade-in hidden">
+     <h2 class="font-bold text-[#3d3530] text-lg mb-4">ประวัติยอดขายรายวัน</h2>
+     <div id="history-list" class="space-y-2"></div>
+     <div id="history-empty" class="text-center py-12 text-[#a89685]">
+      ยังไม่มีประวัติการขาย
+     </div>
+    </div><!-- Forecast Tab -->
+    <div id="page-forecast" class="fade-in hidden">
+     <h2 class="font-bold text-[#3d3530] text-lg mb-4">พยากรณ์ยอดขายวันต่อไป</h2>
+     <div class="card-base rounded-xl p-5 mb-4">
+      <div class="text-center">
+       <div class="text-4xl font-bold text-[#b8956d]" id="forecast-total">
+        0
+       </div>
+       <div class="text-sm text-[#a89685] mt-1">
+        แก้วโดยประมาณ
+       </div>
+      </div>
+     </div>
+     <h3 class="font-bold text-[#3d3530] text-base mb-3">วัตถุดิบที่ต้องซื้อ</h3>
+     <div id="forecast-ingredients" class="space-y-2"></div>
     </div>
-
-    <div id="page-stock" class="hidden space-y-2">
-        <h2 class="text-lg font-bold mb-4">คลังวัตถุดิบปัจจุบัน</h2>
-        <div id="stock-list" class="grid gap-2 text-sm"></div>
+   </main><!-- Add Stock Modal -->
+   <div id="stock-modal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="card-base rounded-xl p-5 w-full max-w-sm">
+     <h3 class="font-bold text-[#3d3530] mb-3">เติมสต๊อกวัตถุดิบ</h3><select id="stock-select" class="w-full input-earth rounded-lg px-3 py-2 mb-3"></select> <label class="text-sm text-[#a89685]">จำนวนที่เติม</label> <input type="number" id="stock-amount" min="1" value="10" class="w-full input-earth rounded-lg px-3 py-2 mb-4">
+     <div class="flex gap-2"><button onclick="closeStockModal()" class="flex-1 py-2 rounded-lg btn-secondary font-semibold transition">ยกเลิก</button> <button onclick="addStock()" id="add-stock-btn" class="flex-1 py-2 rounded-lg btn-primary font-semibold transition">เติม</button>
+     </div>
     </div>
-
-    <div id="page-history" class="hidden space-y-3">
-        <h2 class="text-lg font-bold mb-4">ยอดขายรายวันย้อนหลัง</h2>
-        <div id="history-list" class="grid gap-2"></div>
-    </div>
-
-    <div id="page-forecast" class="hidden space-y-4">
-        <div class="bg-[#e94560] p-6 rounded-[2rem] text-white">
-            <h3 class="font-black text-xl">Shopping List</h3>
-            <p class="text-xs opacity-80">วัตถุดิบที่ควรเตรียมเพิ่มสำหรับวันพรุ่งนี้</p>
-        </div>
-        <div id="shopping-list" class="grid gap-2"></div>
-    </div>
-
-  </main>
-
+   </div><!-- Toast -->
+   <div id="toast" class="fixed top-4 right-4 bg-[#8b7355] text-white px-4 py-2.5 rounded-lg font-semibold shadow-lg transition-all translate-x-[120%] z-50"></div>
+  </div>
   <script>
-    // ข้อมูลวัตถุดิบและสูตร (ตามไฟล์ที่คุณให้มา)
-    let INVENTORY = {
-        "Coffee Bean": 5000, "Matcha": 1000, "Green Tea": 1000, "Thai Tea": 1000, "Taiwan Tea": 1000,
-        "Fresh Milk": 10000, "Honey": 2000, "Lemon": 1000, "Syrup": 5000, "Water": 50000, 
-        "Ice": 20000, "Cup": 500, "Lid": 500, "Straw": 500, "Chocolate": 2000, "Strawberry": 2000, "Orange": 2000
-    };
+// ===== Reference Data =====
+const MENUS = [
+  { id:'m1', name:'เอสเพรสโซ', emoji:'☕', price:45, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.03,unit:'ลิตร'}]},
+  { id:'m2', name:'อเมริกาโน่', emoji:'🖤', price:50, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.15,unit:'ลิตร'}]},
+  { id:'m3', name:'คาปูชิโน่', emoji:'🤎', price:60, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.1,unit:'ลิตร'},{id:'i3',name:'นม',amount:0.15,unit:'ลิตร'}]},
+  { id:'m4', name:'ลาเต้', emoji:'🥛', price:65, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.08,unit:'ลิตร'},{id:'i3',name:'นม',amount:0.25,unit:'ลิตร'}]},
+  { id:'m5', name:'เฟลต ไวท์', emoji:'☁️', price:60, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.015,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.08,unit:'ลิตร'},{id:'i3',name:'นม',amount:0.2,unit:'ลิตร'}]},
+  { id:'m6', name:'เอฟโฟกาโด้', emoji:'🥑', price:75, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i3',name:'นม',amount:0.25,unit:'ลิตร'},{id:'i4',name:'เอฟโฟกาโด',amount:0.1,unit:'กก.'},{id:'i5',name:'น้ำตาลเหลว',amount:0.02,unit:'ลิตร'}]},
+  { id:'m7', name:'กาแฟแบบเย็น', emoji:'🧊', price:55, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.12,unit:'ลิตร'},{id:'i3',name:'นม',amount:0.15,unit:'ลิตร'}]},
+  { id:'m8', name:'มอคค่าชิโน่', emoji:'🍫', price:70, ingredients:[{id:'i1',name:'เมล็ดกาแฟ',amount:0.02,unit:'กก.'},{id:'i2',name:'น้ำ',amount:0.1,unit:'ลิตร'},{id:'i3',name:'นม',amount:0.2,unit:'ลิตร'},{id:'i6',name:'ช็อกโกแลต',amount:0.03,unit:'กก.'}]},
+];
 
-    const RECIPES = {
-        "Espresso": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1},
-        "Americano": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Syrup":1, "Ice":1},
-        "Americano Honey": {"Cup":1, "Lid":1, "Straw":1, "Coffee Bean":1, "Honey":1, "Syrup":1, "Ice":1},
-        "Matcha Latte": {"Cup":1, "Lid":1, "Straw":1, "Matcha":1, "Fresh Milk":0.5, "Syrup":1, "Ice":1},
-        "Thai Tea": {"Cup":1, "Lid":1, "Straw":1, "Thai Tea":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
-        "Chocolate": {"Cup":1, "Lid":1, "Straw":1, "Chocolate":1, "Fresh Milk":1, "Syrup":1, "Ice":1},
-        "Strawberry Fresh Milk": {"Cup":1, "Lid":1, "Straw":1, "Strawberry":1, "Fresh Milk":1, "Syrup":1}
-    };
+const ALL_INGREDIENTS = [];
+const seen = new Set();
+MENUS.forEach(m => m.ingredients.forEach(ing => {
+  if(!seen.has(ing.id)){ seen.add(ing.id); ALL_INGREDIENTS.push({id:ing.id, name:ing.name, unit:ing.unit}); }
+}));
 
-    let salesHistory = [];
+// ===== State =====
+let currentTab = 'sales';
+let saleCounts = {};
+let allRecords = [];
+let stockMap = {};
 
-    function init() {
-        // จำลองข้อมูลย้อนหลัง 2 เดือนเพื่อเป็นฐานข้อมูลพยากรณ์
-        generateSampleHistory();
-        renderInputPage();
-        document.getElementById('date-display').innerText = new Date().toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
-        lucide.createIcons();
+// ===== Default Config =====
+const defaultConfig = {
+  shop_name: 'ร้านครัวกาแฟ',
+  background_color: '#faf8f5',
+  surface_color: '#ffffff',
+  text_color: '#3d3530',
+  primary_action: '#b8956d',
+  secondary_action: '#a89685',
+  font_family: 'Sarabun',
+  font_size: 16
+};
+
+// ===== Element SDK =====
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => {
+    const bg = config.background_color || defaultConfig.background_color;
+    const tx = config.text_color || defaultConfig.text_color;
+    const ff = config.font_family || defaultConfig.font_family;
+    const fs = config.font_size || defaultConfig.font_size;
+
+    document.body.style.background = bg;
+    document.body.style.color = tx;
+    document.body.style.fontFamily = `${ff}, Sarabun, sans-serif`;
+    document.body.style.fontSize = fs + 'px';
+
+    document.getElementById('shop-name').textContent = config.shop_name || defaultConfig.shop_name;
+  },
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      { get:()=>config.background_color||defaultConfig.background_color, set:(v)=>{config.background_color=v;window.elementSdk.setConfig({background_color:v})} },
+      { get:()=>config.surface_color||defaultConfig.surface_color, set:(v)=>{config.surface_color=v;window.elementSdk.setConfig({surface_color:v})} },
+      { get:()=>config.text_color||defaultConfig.text_color, set:(v)=>{config.text_color=v;window.elementSdk.setConfig({text_color:v})} },
+      { get:()=>config.primary_action||defaultConfig.primary_action, set:(v)=>{config.primary_action=v;window.elementSdk.setConfig({primary_action:v})} },
+      { get:()=>config.secondary_action||defaultConfig.secondary_action, set:(v)=>{config.secondary_action=v;window.elementSdk.setConfig({secondary_action:v})} },
+    ],
+    borderables: [],
+    fontEditable: { get:()=>config.font_family||defaultConfig.font_family, set:(v)=>{config.font_family=v;window.elementSdk.setConfig({font_family:v})} },
+    fontSizeable: { get:()=>config.font_size||defaultConfig.font_size, set:(v)=>{config.font_size=v;window.elementSdk.setConfig({font_size:v})} },
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['shop_name', config.shop_name || defaultConfig.shop_name]
+  ])
+});
+
+// ===== Data SDK =====
+const dataHandler = {
+  onDataChanged(data) {
+    allRecords = data;
+    rebuildStockMap();
+    renderCurrentTab();
+  }
+};
+(async()=>{
+  await window.dataSdk.init(dataHandler);
+})();
+
+function rebuildStockMap() {
+  stockMap = {};
+  ALL_INGREDIENTS.forEach(i => stockMap[i.id] = 0);
+
+  allRecords.forEach(r => {
+    if(r.stock_ingredient && r.stock_amount) {
+      stockMap[r.stock_ingredient] = (stockMap[r.stock_ingredient]||0) + r.stock_amount;
     }
-
-    // สร้างช่องกรอกข้อมูลในหน้าแรก
-    function renderInputPage() {
-        const container = document.getElementById('input-list');
-        container.innerHTML = Object.keys(RECIPES).map(name => `
-            <div class="card-item flex items-center justify-between gap-4">
-                <div class="flex-1">
-                    <p class="text-white font-bold text-sm">${name}</p>
-                    <p class="text-[10px] text-[#8a8a9a] uppercase">จำนวนที่ขายได้</p>
-                </div>
-                <div class="w-32">
-                    <input type="number" id="val-${name}" class="input-box" placeholder="0" min="0" onwheel="this.blur()">
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function saveClosingReport() {
-        let hasData = false;
-        const reportDate = new Date();
-
-        Object.keys(RECIPES).forEach(name => {
-            const qty = parseInt(document.getElementById('val-'+name).value) || 0;
-            if (qty > 0) {
-                hasData = true;
-                // บันทึกลงประวัติ
-                salesHistory.push({ name, qty, date: reportDate });
-                // ตัดสต๊อก
-                const recipe = RECIPES[name];
-                Object.entries(recipe).forEach(([ing, amt]) => {
-                    INVENTORY[ing] -= (amt * qty);
-                });
-                // ล้างค่า
-                document.getElementById('val-'+name).value = "";
-            }
+    if(r.menu_id && r.quantity) {
+      const menu = MENUS.find(m=>m.id===r.menu_id);
+      if(menu) {
+        menu.ingredients.forEach(ing => {
+          stockMap[ing.id] = (stockMap[ing.id]||0) - (ing.amount * r.quantity);
         });
+      }
+    }
+  });
+}
 
-        if (hasData) {
-            alert("✨ บันทึกปิดยอดเรียบร้อย! ข้อมูลสต๊อกถูกตัดออกแล้ว");
-            switchTab('history');
-        } else {
-            alert("กรุณากรอกยอดขายก่อนกดบันทึกครับ");
+// ===== Tab Switching =====
+function switchTab(tab) {
+  currentTab = tab;
+  ['sales','stock','history','forecast'].forEach(t => {
+    document.getElementById('page-'+t).classList.toggle('hidden', t!==tab);
+    document.getElementById('tab-'+t).className = t===tab ? 'tab-active px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap' : 'tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap';
+  });
+  renderCurrentTab();
+  lucide.createIcons();
+}
+
+function renderCurrentTab() {
+  const today = new Date();
+  document.getElementById('date-display').textContent = today.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  if(currentTab==='sales') renderSales();
+  if(currentTab==='stock') renderStock();
+  if(currentTab==='history') renderHistory();
+  if(currentTab==='forecast') renderForecast();
+}
+
+// ===== Sales Tab =====
+function renderSales() {
+  const today = new Date().toISOString().substring(0,10);
+  document.getElementById('sales-date').textContent = new Date().toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'2-digit'});
+
+  const grid = document.getElementById('sales-grid');
+  grid.innerHTML = '';
+  
+  MENUS.forEach(m => {
+    const count = saleCounts[m.id]||0;
+    const card = document.createElement('div');
+    card.className = 'card-base rounded-xl p-3 card-glow transition-all';
+    card.innerHTML = `
+      <div class="text-3xl mb-2">${m.emoji}</div>
+      <div class="font-bold text-[#3d3530] text-sm">${m.name}</div>
+      <div class="text-[#b8956d] font-bold text-xs mt-1">฿${m.price}</div>
+      <input type="number" min="0" value="${count}" onchange="updateSale('${m.id}',this.value)" class="w-full mt-3 py-2 px-2 input-earth rounded-lg text-center font-bold text-lg focus:border-[#b8956d]" placeholder="0">
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updateSale(menuId, value) {
+  const qty = Math.max(0, parseInt(value)||0);
+  saleCounts[menuId] = qty;
+}
+
+async function saveDailySales() {
+  const entries = Object.entries(saleCounts).filter(([,v])=>v>0);
+  if(entries.length === 0) {
+    showToast('⚠️ กรุณาเลือกเมนูอย่างน้อย 1 รายการ','#f59e0b');
+    return;
+  }
+
+  const btn = document.getElementById('save-sales-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="pulse-dot">⏳</span> กำลังบันทึก...';
+
+  const today = new Date().toISOString().substring(0,10);
+  let saved = 0;
+
+  if(allRecords.length + entries.length >= 999) {
+    showToast('⚠️ ข้อมูลเต็มแล้ว','#f59e0b');
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i>บันทึกยอดขายวันนี้';
+    lucide.createIcons();
+    return;
+  }
+
+  for(const [menuId, qty] of entries) {
+    const result = await window.dataSdk.create({ 
+      sale_date: today, 
+      menu_id: menuId, 
+      quantity: qty, 
+      stock_ingredient: '', 
+      stock_amount: 0 
+    });
+    if(result.isOk) saved++;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i>บันทึกยอดขายวันนี้';
+  lucide.createIcons();
+  
+  if(saved === entries.length) {
+    showToast(`✅ บันทึกสำเร็จ ${saved} รายการ`);
+    saleCounts = {};
+    renderSales();
+  } else {
+    showToast(`⚠️ บันทึกได้ ${saved}/${entries.length} รายการ`,'#f59e0b');
+  }
+}
+
+// ===== Stock Tab =====
+function renderStock() {
+  const list = document.getElementById('stock-list');
+  list.innerHTML = '';
+  
+  ALL_INGREDIENTS.forEach(ing => {
+    const stock = (stockMap[ing.id]||0);
+    const maxStock = 20;
+    const pct = Math.max(0, Math.min(100, (stock/maxStock)*100));
+    const color = stock<=1 ? '#c4613d' : stock<=5 ? '#d4a574' : '#8b7355';
+    
+    const el = document.createElement('div');
+    el.className = 'card-base rounded-lg p-3 flex items-center gap-3';
+    el.innerHTML = `
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-1">
+          <span class="font-semibold text-[#3d3530] text-sm">${ing.name}</span>
+          <span class="text-sm" style="color:${color}">${stock.toFixed(2)} ${ing.unit}</span>
+        </div>
+        <div class="h-1.5 bg-[#e8ddd2] rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function showAddStock() {
+  const sel = document.getElementById('stock-select');
+  sel.innerHTML = ALL_INGREDIENTS.map(i=>`<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
+  document.getElementById('stock-modal').classList.remove('hidden');
+}
+
+function closeStockModal() { 
+  document.getElementById('stock-modal').classList.add('hidden'); 
+}
+
+async function addStock() {
+  const ingId = document.getElementById('stock-select').value;
+  const amount = parseFloat(document.getElementById('stock-amount').value)||0;
+  if(amount<=0) return;
+
+  const btn = document.getElementById('add-stock-btn');
+  btn.disabled = true; 
+  btn.textContent = '...';
+
+  if(allRecords.length >= 999) {
+    showToast('⚠️ ข้อมูลเต็มแล้ว','#f59e0b');
+    btn.disabled=false; 
+    btn.textContent='เติม'; 
+    return;
+  }
+
+  const result = await window.dataSdk.create({ 
+    sale_date: new Date().toISOString().substring(0,10), 
+    menu_id: '', 
+    quantity: 0, 
+    stock_ingredient: ingId, 
+    stock_amount: amount 
+  });
+
+  btn.disabled=false; 
+  btn.textContent='เติม';
+  
+  if(result.isOk) { 
+    closeStockModal(); 
+    showToast('✅ เติมสต๊อกสำเร็จ'); 
+  }
+  else showToast('❌ เกิดข้อผิดพลาด','#dc2626');
+}
+
+// ===== History Tab =====
+function renderHistory() {
+  // Group by date and sum quantities
+  const salesByDate = {};
+  allRecords.filter(r=>r.menu_id && r.quantity).forEach(r => {
+    if(!salesByDate[r.sale_date]) salesByDate[r.sale_date] = {};
+    salesByDate[r.sale_date][r.menu_id] = (salesByDate[r.sale_date][r.menu_id]||0) + r.quantity;
+  });
+
+  const dates = Object.keys(salesByDate).sort().reverse();
+  const list = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  
+  list.innerHTML = '';
+  empty.classList.toggle('hidden', dates.length>0);
+
+  dates.slice(0,30).forEach(dateStr => {
+    const menuSales = salesByDate[dateStr];
+    const d = new Date(dateStr + 'T00:00:00');
+    const dayLabel = d.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'2-digit'});
+    
+    const card = document.createElement('div');
+    card.className = 'card-base rounded-lg p-4';
+    
+    let totalRevenue = 0;
+    let itemsHtml = '';
+    
+    Object.entries(menuSales).forEach(([menuId, qty]) => {
+      const menu = MENUS.find(m=>m.id===menuId);
+      if(menu) {
+        totalRevenue += menu.price * qty;
+        itemsHtml += `<div class="flex justify-between text-sm text-[#a89685]"><span>${menu.emoji} ${menu.name} x${qty}</span><span>฿${menu.price*qty}</span></div>`;
+      }
+    });
+    
+    card.innerHTML = `
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-bold text-[#3d3530]">${dayLabel}</span>
+        <span class="text-[#b8956d] font-bold">฿${totalRevenue}</span>
+      </div>
+      <div class="space-y-1 text-xs">
+        ${itemsHtml}
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+// ===== Forecast Tab =====
+function renderForecast() {
+  // Calculate average daily sales
+  const salesByDate = {};
+  const salesByMenuByDate = {};
+  
+  allRecords.filter(r=>r.menu_id && r.quantity).forEach(r => {
+    if(!salesByDate[r.sale_date]) salesByDate[r.sale_date] = {};
+    salesByDate[r.sale_date][r.menu_id] = (salesByDate[r.sale_date][r.menu_id]||0) + r.quantity;
+  });
+
+  const dates = Object.keys(salesByDate).sort();
+  const recentDays = dates.slice(-7);
+  const avgDaily = recentDays.length > 0 
+    ? recentDays.reduce((sum, d) => sum + Object.values(salesByDate[d]).reduce((a,b)=>a+b,0), 0) / recentDays.length
+    : 8;
+
+  // Per-menu average
+  const menuAvg = {};
+  MENUS.forEach(m => {
+    let total = 0, count = 0;
+    recentDays.forEach(d => {
+      if(salesByDate[d] && salesByDate[d][m.id]) { 
+        total += salesByDate[d][m.id]; 
+        count++; 
+      }
+    });
+    menuAvg[m.id] = count > 0 ? total/count : 0.7;
+  });
+
+  // Ingredient needs
+  const ingNeeds = {};
+  MENUS.forEach(m => {
+    const dailyQty = menuAvg[m.id]||0;
+    m.ingredients.forEach(ing => {
+      ingNeeds[ing.id] = (ingNeeds[ing.id]||0) + (ing.amount * dailyQty);
+    });
+  });
+
+  document.getElementById('forecast-total').textContent = Math.round(avgDaily);
+
+  const forecastList = document.getElementById('forecast-ingredients');
+  forecastList.innerHTML = '';
+  
+  ALL_INGREDIENTS.forEach(ing => {
+    const need = ingNeeds[ing.id]||0;
+    const have = stockMap[ing.id]||0;
+    const toBuy = Math.max(0, need - have);
+    
+    const el = document.createElement('div');
+    el.className = 'card-base rounded-lg p-3 flex items-center justify-between';
+    el.innerHTML = `
+      <div>
+        <div class="text-[#3d3530] font-semibold text-sm">${ing.name}</div>
+        <div class="text-[10px] text-[#a89685]">ต้องใช้ ${need.toFixed(2)} ${ing.unit} / มี ${have.toFixed(2)}</div>
+      </div>
+      <div class="text-right">
+        ${toBuy > 0.1
+          ? `<span class="text-[#c4613d] font-bold text-sm">ซื้อ ${toBuy.toFixed(2)}</span>`
+          : `<span class="text-[#8b7355] font-bold text-sm">✓ พอ</span>`
         }
-    }
+      </div>
+    `;
+    forecastList.appendChild(el);
+  });
+}
 
-    function switchTab(tab) {
-        ['report', 'stock', 'history', 'forecast'].forEach(t => {
-            document.getElementById('page-'+t).classList.toggle('hidden', t !== tab);
-            document.getElementById('btn-'+t).classList.toggle('tab-active', t === tab);
-            if(t !== tab) document.getElementById('btn-'+t).classList.replace('text-[#8a8a9a]', 'text-[#8a8a9a]');
-        });
-        if(tab === 'stock') renderStock();
-        if(tab === 'history') renderHistory();
-        if(tab === 'forecast') renderForecast();
-        lucide.createIcons();
-    }
+// ===== Toast =====
+function showToast(msg, color='#8b7355') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; 
+  t.style.background = color;
+  t.style.transform = 'translateX(0)';
+  setTimeout(()=>{ t.style.transform='translateX(120%)'; },2500);
+}
 
-    function renderStock() {
-        const container = document.getElementById('stock-list');
-        container.innerHTML = Object.entries(INVENTORY).map(([ing, q]) => `
-            <div class="bg-[#1a1a2e] p-4 rounded-xl flex justify-between items-center border border-[#2a2a3e]">
-                <span class="text-[#8a8a9a] font-bold text-xs uppercase">${ing}</span>
-                <span class="text-white font-black ${q < 100 ? 'text-[#e94560] animate-pulse' : ''}">${Math.max(0, q).toLocaleString()}</span>
-            </div>
-        `).join('');
-    }
-
-    function renderHistory() {
-        const grouped = salesHistory.reduce((acc, curr) => {
-            const d = new Date(curr.date).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
-            acc[d] = (acc[d] || 0) + curr.qty;
-            return acc;
-        }, {});
-        
-        document.getElementById('history-list').innerHTML = Object.entries(grouped).reverse().map(([date, total]) => `
-            <div class="bg-[#1a1a2e] p-4 rounded-xl flex justify-between items-center border border-[#2a2a3e]">
-                <span class="text-white font-bold text-sm">${date}</span>
-                <span class="text-[#e94560] font-black">${total} แก้ว</span>
-            </div>
-        `).join('');
-    }
-
-    function renderForecast() {
-        // พยากรณ์สำหรับ "วันพรุ่งนี้"
-        const tomorrowIdx = (new Date().getDay() + 1) % 7;
-        const tomorrowDayName = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][tomorrowIdx];
-        
-        // คำนวณความต้องการวัตถุดิบเฉลี่ย (ตัวอย่าง)
-        let needs = {};
-        Object.keys(RECIPES).forEach(name => {
-            const recipe = RECIPES[name];
-            Object.entries(recipe).forEach(([ing, amt]) => {
-                needs[ing] = (needs[ing] || 0) + (amt * 15); // สมมติค่าเฉลี่ย 15 แก้วต่อเมนู
-            });
-        });
-
-        document.getElementById('shopping-list').innerHTML = Object.entries(needs).map(([ing, amount]) => {
-            const current = INVENTORY[ing] || 0;
-            const buy = Math.ceil(Math.max(0, amount - current));
-            if(buy <= 0) return '';
-            return `
-                <div class="bg-[#1a1a2e] p-4 rounded-2xl border border-dashed border-[#e94560]/50 flex justify-between">
-                    <span class="text-white font-bold text-xs">${ing}</span>
-                    <span class="text-[#e94560] font-black text-xs">ซื้อเพิ่ม +${buy}</span>
-                </div>
-            `;
-        }).join('');
-    }
-
-    function generateSampleHistory() {
-        const data = [];
-        for(let i=60; i>0; i--) {
-            const d = new Date(); d.setDate(d.getDate()-i);
-            Object.keys(RECIPES).forEach(m => data.push({ name: m, qty: 10 + Math.floor(Math.random()*20), date: d }));
-        }
-        salesHistory = data;
-    }
-
-    init();
+// Init
+renderCurrentTab();
+lucide.createIcons();
   </script>
-</body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9efdbf03b55ca1bd',t:'MTc3Njc4ODc0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
