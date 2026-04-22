@@ -22,9 +22,9 @@
     <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h1 class="text-3xl font-bold text-[#8b7355]">Smart Coffee Ops</h1>
-        <p class="text-gray-500">ระบบบริหารจัดการร้านกาแฟครบวงจร</p>
+        <p class="text-gray-500">ระบบบริหารจัดการร้านกาแฟ (อัปเดตเมนูจากฐานข้อมูล CSV)</p>
       </div>
-      <div id="last-update" class="text-xs bg-white px-4 py-2 rounded-full border border-gray-100">อัปเดตข้อมูลล่าสุดจากไฟล์ .csv</div>
+      <div id="last-update" class="text-xs bg-white px-4 py-2 rounded-full border border-gray-100">ข้อมูลอ้างอิง: ingre.xlsx</div>
     </header>
 
     <nav class="flex overflow-x-auto border-b border-gray-200 mb-8 bg-white rounded-t-xl">
@@ -49,7 +49,7 @@
     <div id="tab-stock" class="hidden space-y-6">
       <div class="card-base p-6">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="package"></i> ยอดสต็อกคงเหลือ & เช็กสต็อก</h2>
+          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="package"></i> ยอดสต็อกคงเหลือ</h2>
           <button onclick="updateInventoryFromCheck()" class="btn-action bg-green-600">อัปเดตสต็อกจากการนับจริง</button>
         </div>
         <div class="overflow-x-auto">
@@ -58,7 +58,7 @@
               <tr>
                 <th class="p-4">รายการวัตถุดิบ</th>
                 <th class="p-4">จำนวนในระบบ</th>
-                <th class="p-4">จำนวนที่นับจริง (กรอกเพื่ออัปเดต)</th>
+                <th class="p-4">จำนวนที่นับจริง</th>
                 <th class="p-4">สถานะ</th>
               </tr>
             </thead>
@@ -71,21 +71,21 @@
     <div id="tab-history" class="hidden space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="card-base p-6 bg-blue-50 border-none text-blue-800">
-          <p class="text-sm font-medium">ยอดรวม ม.ค.</p>
+          <p class="text-sm font-medium">ยอดรวม ม.ค. (แก้ว)</p>
           <p class="text-3xl font-bold" id="jan-total">0</p>
         </div>
         <div class="card-base p-6 bg-green-50 border-none text-green-800">
-          <p class="text-sm font-medium">ยอดรวม ก.พ.</p>
+          <p class="text-sm font-medium">ยอดรวม ก.พ. (แก้ว)</p>
           <p class="text-3xl font-bold" id="feb-total">0</p>
         </div>
         <div class="card-base p-6 bg-orange-50 border-none text-orange-800">
-          <p class="text-sm font-medium">ยอดรวม มี.ค.</p>
+          <p class="text-sm font-medium">ยอดรวม มี.ค. (แก้ว)</p>
           <p class="text-3xl font-bold" id="mar-total">0</p>
         </div>
       </div>
       <div class="card-base p-6">
-        <h2 class="text-xl font-bold mb-4">5 อันดับเมนูขายดี (3 เดือนล่าสุด)</h2>
-        <div id="top-menus-list" class="space-y-4"></div>
+        <h2 class="text-xl font-bold mb-4">สรุปยอดขายแยกตามเมนู (3 เดือน)</h2>
+        <div id="top-menus-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
     </div>
 
@@ -93,10 +93,10 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="card-base p-6">
           <h2 class="text-xl font-bold mb-4 text-purple-700 flex items-center gap-2"><i data-lucide="sparkles"></i> คาดการณ์ยอดขายพรุ่งนี้</h2>
-          <div id="forecast-list" class="space-y-3"></div>
+          <div id="forecast-list" class="space-y-3 max-h-96 overflow-y-auto pr-2"></div>
         </div>
         <div class="card-base p-6 border-red-200">
-          <h2 class="text-xl font-bold mb-4 text-red-600 flex items-center gap-2"><i data-lucide="shopping-bag"></i> รายการที่ต้องซื้อเพิ่ม</h2>
+          <h2 class="text-xl font-bold mb-4 text-red-600 flex items-center gap-2"><i data-lucide="shopping-bag"></i> วัตถุดิบที่ต้องเติม</h2>
           <div id="shopping-list" class="space-y-3"></div>
         </div>
       </div>
@@ -104,28 +104,62 @@
   </div>
 
   <script>
-    // --- Data Mockup from CSV files ---
+    // --- Data based on CSV Reference ---
     const recipes = {
-      "Espresso": {"Coffee Bean": 30, "Cup": 1, "Lid": 1, "Straw": 1, "Ice": 120, "Syrup": 30},
-      "Americano": {"Coffee Bean": 30, "Cup": 1, "Lid": 1, "Straw": 1, "Ice": 120},
-      "Latte": {"Coffee Bean": 30, "Fresh Milk": 180, "Cup": 1, "Lid": 1, "Straw": 1, "Ice": 120},
-      "Thai Tea": {"Thai Tea": 80, "Fresh Milk": 150, "Cup": 1, "Lid": 1, "Straw": 1, "Ice": 120},
-      "Matcha Latte": {"Matcha": 50, "Fresh Milk": 180, "Cup": 1, "Lid": 1, "Straw": 1, "Ice": 120},
-      "Mocha": {"Coffee Bean": 30, "Chocolate": 30, "Fresh Milk": 150, "Cup": 1, "Lid": 1, "Straw": 1, "Ice": 120}
+      "Espresso": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30},
+      "Americano": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30},
+      "Americano Honey": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Honey (ml)": 30},
+      "Americano Honey Lemon": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Honey (ml)": 30, "Lemon (ml)": 20},
+      "Americano Orange": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Orange (ml)": 30},
+      "Americano Berry": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Berry (ml)": 30},
+      "Latte": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 180},
+      "Es-Yen": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 150},
+      "Capuccino": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 150},
+      "Mocha": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 150, "Chocolate (ml)": 30},
+      "Caramel Macchiato": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 170, "Caramel (ml)": 10},
+      "Pure Matcha": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Matcha (ml)": 50},
+      "Matcha Honey": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Matcha (ml)": 50, "Honey (ml)": 30},
+      "Matcha Honey Lemon": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Matcha (ml)": 50, "Honey (ml)": 30, "Lemon (ml)": 20},
+      "Matcha Latte": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 180, "Matcha (ml)": 50},
+      "Fresh Milk": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Chocolate (ml)": 30},
+      "Choccolate": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Chocolate (ml)": 30, "Matcha (ml)": 10},
+      "Choccolate Mint": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Mint (ml)": 30},
+      "Strawberry Fresh Milk": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Strawberry (ml)": 30},
+      "Thai Tea": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Thai Tea (ml)": 80},
+      "Green Tea": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Green Tea (ml)": 80},
+      "Taiwan Milk Tea": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Taiwan Tea (ml)": 80},
+      "Srawberry Tea": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Strawberry (ml)": 30},
+      "Berry Tea": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Berry (ml)": 30},
+      "Orange Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Orange (ml)": 30, "Soda (ml)": 180},
+      "Srawberry Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Strawberry (ml)": 30, "Soda (ml)": 180},
+      "Mint Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Mint (ml)": 30, "Soda (ml)": 180},
+      "Peach Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Peach (ml)": 30, "Soda (ml)": 180},
+      "Yuzu Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Yuzu (ml)": 30, "Soda (ml)": 180},
+      "Apple Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Apple (ml)": 30, "Soda (ml)": 180},
+      "Honey Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Honey (ml)": 30, "Soda (ml)": 180},
+      "Honey Lemon Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Honey (ml)": 30, "Lemon (ml)": 20, "Soda (ml)": 180},
+      "Lychee Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Lychee (ml)": 30, "Soda (ml)": 180},
+      "Lemon Soda": {"Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Lemon (ml)": 30, "Soda (ml)": 180},
+      "Topping Boba": {"Boba (g)": 60},
+      "Topping Cream Cheese": {"Cream Cheese (g)": 40}
     };
 
     let inventory = {
-      "Coffee Bean": 5000, "Matcha": 1000, "Thai Tea": 1000, "Fresh Milk": 10000,
-      "Chocolate": 2000, "Syrup": 5000, "Cup": 500, "Lid": 500, "Straw": 500, "Ice": 20000
+      "Cup (pc)": 1000, "Lid (pc)": 1000, "Straw (pc)": 1000, "Ice (g)": 50000, "Syrup (ml)": 10000,
+      "Coffee Bean (g)": 5000, "Fresh Milk (ml)": 20000, "Caramel (ml)": 2000, "Thai Tea (ml)": 5000,
+      "Green Tea (ml)": 5000, "Taiwan Tea (ml)": 5000, "Chocolate (ml)": 3000, "Matcha (ml)": 2000,
+      "Mint (ml)": 1000, "Honey (ml)": 2000, "Lemon (ml)": 1000, "Strawberry (ml)": 2000,
+      "Orange (ml)": 2000, "Berry (ml)": 1000, "Lychee (ml)": 1000, "Apple (ml)": 1000,
+      "Yuzu (ml)": 1000, "Peach (ml)": 1000, "Soda (ml)": 15000, "Boba (g)": 5000, "Cream Cheese (g)": 2000
     };
 
-    const histData = [
-      {menu: "Espresso", jan: 450, feb: 420, mar: 500},
-      {menu: "Americano", jan: 600, feb: 580, mar: 620},
-      {menu: "Latte", jan: 300, feb: 310, mar: 350},
-      {menu: "Thai Tea", jan: 200, feb: 190, mar: 210},
-      {menu: "Matcha Latte", jan: 150, feb: 160, mar: 180}
-    ];
+    // จำลองยอดขายเดิมตามเมนูที่เพิ่มเข้ามาใหม่
+    const histData = Object.keys(recipes).map(menu => ({
+      menu: menu,
+      jan: Math.floor(Math.random() * 200 + 50),
+      feb: Math.floor(Math.random() * 200 + 50),
+      mar: Math.floor(Math.random() * 200 + 50)
+    }));
 
     function init() {
       renderDailyInputs();
@@ -135,52 +169,57 @@
       lucide.createIcons();
     }
 
-    // --- Core Logic ---
     function switchTab(tabId) {
       document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('tab-active'));
       document.getElementById('tab-' + tabId).classList.remove('hidden');
       document.getElementById('btn-' + tabId).classList.add('tab-active');
-      if(tabId === 'predict') renderForecast();
     }
 
     function renderDailyInputs() {
       const container = document.getElementById('sales-inputs');
+      container.innerHTML = "";
       Object.keys(recipes).forEach(menu => {
         container.innerHTML += `
-          <div class="p-4 bg-gray-50 rounded-xl">
-            <label class="block text-xs font-bold text-gray-500 mb-1">${menu}</label>
-            <input type="number" id="sale-${menu}" class="input-num text-lg font-bold" placeholder="0">
+          <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 truncate">${menu}</label>
+            <input type="number" id="sale-${menu}" class="input-num text-md font-bold" placeholder="0">
           </div>
         `;
       });
     }
 
     function processDailySales() {
-      let log = "";
+      let log = [];
       Object.keys(recipes).forEach(menu => {
         const qty = parseInt(document.getElementById(`sale-${menu}`).value) || 0;
         if(qty > 0) {
           for (let [ing, amt] of Object.entries(recipes[menu])) {
-            inventory[ing] -= (amt * qty);
+            if(inventory[ing] !== undefined) inventory[ing] -= (amt * qty);
           }
-          log += `${menu} ${qty} แก้ว, `;
+          log.push(`${menu} x${qty}`);
         }
       });
-      alert(log ? "ตัดสต็อกเรียบร้อย: " + log : "กรุณากรอกยอดขาย");
-      renderStockTable();
+      if(log.length > 0) {
+        alert("บันทึกยอดขายและตัดสต็อกเรียบร้อยแล้ว");
+        renderStockTable();
+        renderForecast();
+      } else {
+        alert("กรุณากรอกยอดขายอย่างน้อย 1 รายการ");
+      }
     }
 
     function renderStockTable() {
       const body = document.getElementById('stock-table-body');
       body.innerHTML = "";
       for (let [ing, qty] of Object.entries(inventory)) {
-        const status = qty < 500 ? '<span class="text-red-500 font-bold">ใกล้หมด</span>' : '<span class="text-green-500">ปกติ</span>';
+        const isLow = qty < 500; 
+        const status = isLow ? '<span class="px-2 py-1 bg-red-100 text-red-600 rounded-md text-xs font-bold">ควรเติม</span>' : '<span class="text-green-500 text-xs">ปกติ</span>';
         body.innerHTML += `
           <tr>
-            <td class="p-4 font-medium">${ing}</td>
-            <td class="p-4 font-mono">${qty.toLocaleString()}</td>
-            <td class="p-4"><input type="number" id="check-${ing}" class="input-num border-blue-200" placeholder="นับได้เท่าไหร่?"></td>
+            <td class="p-4 text-sm font-medium">${ing}</td>
+            <td class="p-4 font-mono text-sm ${isLow ? 'text-red-600 font-bold' : ''}">${qty.toLocaleString()}</td>
+            <td class="p-4"><input type="number" id="check-${ing}" class="input-num text-sm border-blue-100" placeholder="ระบุหน่วย"></td>
             <td class="p-4">${status}</td>
           </tr>
         `;
@@ -194,19 +233,21 @@
           inventory[ing] = parseInt(checkVal);
         }
       }
-      alert("อัปเดตสต็อกเรียบร้อยแล้ว");
+      alert("อัปเดตสต็อกปัจจุบันแล้ว");
       renderStockTable();
+      renderForecast();
     }
 
     function renderHistory() {
       let jT = 0, fT = 0, mT = 0;
       const list = document.getElementById('top-menus-list');
+      list.innerHTML = "";
       histData.forEach(d => {
         jT += d.jan; fT += d.feb; mT += d.mar;
         list.innerHTML += `
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span>${d.menu}</span>
-            <span class="font-bold">${(d.jan + d.feb + d.mar).toLocaleString()} แก้ว</span>
+          <div class="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
+            <span class="text-sm">${d.menu}</span>
+            <span class="font-bold text-[#8b7355]">${(d.jan + d.feb + d.mar).toLocaleString()}</span>
           </div>
         `;
       });
@@ -223,11 +264,10 @@
       let totalUsageNeeded = {};
 
       histData.forEach(d => {
-        const avg = Math.ceil((d.jan + d.feb + d.mar) / 90); // ค่าเฉลี่ยต่อวัน
-        const forecast = Math.ceil(avg * 1.2); // พยากรณ์เพิ่มขึ้น 20%
-        fList.innerHTML += `<div class="flex justify-between"><span>${d.menu}</span><span class="font-bold text-purple-600">${forecast} แก้ว</span></div>`;
+        const avg = Math.ceil((d.jan + d.feb + d.mar) / 90);
+        const forecast = Math.ceil(avg * 1.15); // พยากรณ์เผื่อ 15%
+        fList.innerHTML += `<div class="flex justify-between border-b border-gray-50 pb-1 text-sm"><span>${d.menu}</span><span class="font-bold text-purple-600">${forecast}</span></div>`;
         
-        // คำนวณวัตถุดิบที่ต้องใช้สำหรับยอดพยากรณ์
         if(recipes[d.menu]) {
           for(let [ing, amt] of Object.entries(recipes[d.menu])) {
             totalUsageNeeded[ing] = (totalUsageNeeded[ing] || 0) + (amt * forecast);
@@ -235,15 +275,18 @@
         }
       });
 
+      let needsPurchase = false;
       for(let [ing, need] of Object.entries(totalUsageNeeded)) {
-        if(inventory[ing] < (need * 3)) { // ถ้าสต็อกเหลือน้อยกว่าที่ต้องใช้ 3 วัน
-          const buyAmt = Math.ceil((need * 7) - inventory[ing]); // แนะนำซื้อเผื่อ 7 วัน
+        // เงื่อนไข: ถ้าสต็อกเหลือน้อยกว่าที่ต้องใช้ 2 วัน
+        if(inventory[ing] < (need * 2)) {
+          const buyAmt = Math.ceil((need * 7) - inventory[ing]); 
           if(buyAmt > 0) {
-            sList.innerHTML += `<div class="flex justify-between p-2 bg-red-50 rounded"><span>${ing}</span><span class="font-bold text-red-600">ซื้อเพิ่ม ${buyAmt.toLocaleString()}</span></div>`;
+            needsPurchase = true;
+            sList.innerHTML += `<div class="flex justify-between p-2 bg-red-50 rounded text-sm"><span>${ing}</span><span class="font-bold text-red-600">+ ${buyAmt.toLocaleString()}</span></div>`;
           }
         }
       }
-      if(!sList.innerHTML) sList.innerHTML = "<p class='text-green-600'>วัตถุดิบเพียงพอสำหรับสัปดาห์หน้า</p>";
+      if(!needsPurchase) sList.innerHTML = "<p class='text-green-600 text-center py-4'>สต็อกเพียงพอสำหรับสัปดาห์นี้</p>";
     }
 
     window.onload = init;
