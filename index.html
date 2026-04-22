@@ -6,6 +6,7 @@
   <title>AI Demand for Coffee Shop Pro</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'Sarabun', sans-serif; }
@@ -101,6 +102,22 @@
           <p class="text-3xl font-bold" id="mar-total">0</p>
         </div>
       </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card-base p-6">
+          <h2 class="text-lg font-bold mb-4">แนวโน้มยอดขายรายเดือน</h2>
+          <div class="h-64">
+            <canvas id="historyChart"></canvas>
+          </div>
+        </div>
+        <div class="card-base p-6">
+          <h2 class="text-lg font-bold mb-4">สัดส่วนยอดขายสะสม</h2>
+          <div class="h-64">
+            <canvas id="menuPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+
       <div class="card-base p-6">
         <h2 class="text-xl font-bold mb-4">ยอดขายสะสมรายเมนู</h2>
         <div id="top-menus-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -111,7 +128,10 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="card-base p-6">
           <h2 class="text-xl font-bold mb-4 text-purple-700 flex items-center gap-2"><i data-lucide="sparkles"></i> พยากรณ์พรุ่งนี้ (เผื่อ 15%)</h2>
-          <div id="forecast-list" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+          <div class="h-64 mb-6">
+             <canvas id="forecastChart"></canvas>
+          </div>
+          <div id="forecast-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
         </div>
         <div class="card-base p-6 border-red-200">
           <h2 class="text-xl font-bold mb-4 text-red-600 flex items-center gap-2"><i data-lucide="shopping-bag"></i> วัตถุดิบที่ต้องสั่งเพิ่ม</h2>
@@ -123,7 +143,7 @@
   </div>
 
   <script>
-    // --- Master Data ---
+    // --- Master Data (ห้ามแก้ไข) ---
     const recipes = {
       "Espresso": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30},
       "Americano": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30},
@@ -149,7 +169,8 @@
       mar: Math.floor(Math.random() * 50)
     }));
 
-    // --- System Logic ---
+    // ตัวแปรเก็บ Instance ของ Chart เพื่อการอัปเดต
+    let charts = {};
 
     function init() {
       loadLocalStorage();
@@ -182,7 +203,8 @@
     }
 
     function updateTimestamp() {
-      document.getElementById('last-update').innerText = "Update: " + new Date().toLocaleTimeString();
+      const el = document.getElementById('last-update');
+      if(el) el.innerText = "Update: " + new Date().toLocaleTimeString();
     }
 
     function switchTab(tabId) {
@@ -190,6 +212,11 @@
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('tab-active'));
       document.getElementById('tab-' + tabId).classList.remove('hidden');
       document.getElementById('btn-' + tabId).classList.add('tab-active');
+      // Re-render charts when switching to relevant tabs
+      if(tabId === 'history' || tabId === 'predict') {
+        renderHistory();
+        renderForecast();
+      }
     }
 
     function filterMenu(category) {
@@ -216,7 +243,6 @@
       document.querySelectorAll('#sales-inputs input').forEach(input => input.value = "");
     }
 
-    // ฟังก์ชันที่แก้ไข: ยอมให้สต็อกติดลบได้
     function processDailySales() {
       let salesToProcess = [];
       let hasInput = false;
@@ -227,7 +253,6 @@
         
         if(qty > 0) {
           hasInput = true;
-          // ตัดสต็อกทันที (อนุญาตให้ติดลบ)
           for (let [ing, amt] of Object.entries(recipes[menu])) {
             if(ing === 'cat') continue;
             if(inventory[ing] !== undefined) {
@@ -257,6 +282,7 @@
 
     function renderStockTable() {
       const body = document.getElementById('stock-table-body');
+      if(!body) return;
       body.innerHTML = "";
       for (let [ing, qty] of Object.entries(inventory)) {
         const isOut = qty <= 0;
@@ -280,9 +306,9 @@
     function updateInventoryFromCheck() {
       let count = 0;
       for (let ing in inventory) {
-        const val = document.getElementById(`check-${ing}`).value;
-        if(val !== "") {
-          inventory[ing] = parseInt(val);
+        const input = document.getElementById(`check-${ing}`);
+        if(input && input.value !== "") {
+          inventory[ing] = parseInt(input.value);
           count++;
         }
       }
@@ -297,7 +323,9 @@
     function renderHistory() {
       let jT = 0, fT = 0, mT = 0;
       const list = document.getElementById('top-menus-list');
+      if(!list) return;
       list.innerHTML = "";
+      
       histData.forEach(d => {
         jT += d.jan; fT += d.feb; mT += d.mar;
         list.innerHTML += `
@@ -307,42 +335,98 @@
           </div>
         `;
       });
+      
       document.getElementById('jan-total').innerText = jT.toLocaleString();
       document.getElementById('feb-total').innerText = fT.toLocaleString();
       document.getElementById('mar-total').innerText = mT.toLocaleString();
+
+      // --- สร้างกราฟ History ---
+      createHistoryCharts(jT, fT, mT);
+    }
+
+    function createHistoryCharts(j, f, m) {
+      if(charts.history) charts.history.destroy();
+      if(charts.pie) charts.pie.destroy();
+
+      const ctxLine = document.getElementById('historyChart').getContext('2d');
+      charts.history = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม'],
+          datasets: [{
+            label: 'ยอดขายรวม (แก้ว)',
+            data: [j, f, m],
+            borderColor: '#8b7355',
+            backgroundColor: 'rgba(139, 115, 85, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      const ctxPie = document.getElementById('menuPieChart').getContext('2d');
+      charts.pie = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: histData.map(d => d.menu),
+          datasets: [{
+            data: histData.map(d => d.jan + d.feb + d.mar),
+            backgroundColor: ['#8b7355', '#a89685', '#d2b48c', '#e8ddd2', '#5d4037', '#795548', '#a1887f', '#d7ccc8', '#f5f5f5']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
     }
 
     function renderForecast() {
       const fList = document.getElementById('forecast-list');
       const sList = document.getElementById('shopping-list');
+      if(!fList || !sList) return;
+      
       fList.innerHTML = ""; sList.innerHTML = "";
       let totalUsageNeededPerDay = {};
+      let forecastLabels = [];
+      let forecastValues = [];
 
-      // 1. คำนวณหาค่าเฉลี่ยการใช้วัตถุดิบต่อวันจากประวัติ 90 วัน
       histData.forEach(d => {
         const avgDailySales = (d.jan + d.feb + d.mar) / 90;
-        const forecastTomorrow = Math.ceil(avgDailySales * 1.15); // เผื่อ 15%
+        const forecastTomorrow = Math.ceil(avgDailySales * 1.15); 
         
         if(forecastTomorrow > 0) {
+           forecastLabels.push(d.menu);
+           forecastValues.push(forecastTomorrow);
            fList.innerHTML += `<div class="flex justify-between border-b border-gray-50 pb-1 text-xs"><span>${d.menu}</span><span class="font-bold text-purple-600">${forecastTomorrow}</span></div>`;
            if(recipes[d.menu]) {
-             for(let [ing, amt] of Object.entries(recipes[name = d.menu])) {
+             for(let [ing, amt] of Object.entries(recipes[d.menu])) {
                if(ing !== 'cat') totalUsageNeededPerDay[ing] = (totalUsageNeededPerDay[ing] || 0) + (amt * forecastTomorrow);
              }
            }
         }
       });
 
-      // 2. คำนวณยอดจัดซื้อ: (ที่ต้องใช้ใน 7 วันข้างหน้า) + (ส่วนที่ติดลบอยู่)
+      // กราฟ Forecast
+      if(charts.forecast) charts.forecast.destroy();
+      const ctxFore = document.getElementById('forecastChart').getContext('2d');
+      charts.forecast = new Chart(ctxFore, {
+        type: 'bar',
+        data: {
+          labels: forecastLabels,
+          datasets: [{
+            label: 'คาดการณ์พรุ่งนี้ (แก้ว)',
+            data: forecastValues,
+            backgroundColor: 'rgba(126, 34, 206, 0.6)',
+            borderRadius: 5
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
       let needsPurchase = false;
       for(let [ing, needPerDay] of Object.entries(totalUsageNeededPerDay)) {
         const stock = inventory[ing];
         const needSevenDays = needPerDay * 7;
-        
-        // เงื่อนไขสั่งซื้อ: ถ้าสต็อกเหลือน้อยกว่าที่ต้องใช้ใน 3 วัน หรือสต็อกติดลบ
         if(stock < (needPerDay * 3)) {
-          // ยอดสั่งซื้อ = (เป้าหมาย 7 วัน) - (สต็อกปัจจุบัน) 
-          // ถ้าสต็อกติดลบ เช่น -500 การลบด้วยเลขลบจะกลายเป็นการบวกเพิ่ม (เช่น 1000 - (-500) = 1500)
           const buyAmt = Math.ceil(needSevenDays - stock); 
           if(buyAmt > 0) {
             needsPurchase = true;
