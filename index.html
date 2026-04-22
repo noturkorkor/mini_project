@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Coffee Ops Pro</title>
+  <title>AI Demand for Coffee Shop Pro</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
     .btn-action { background: #8b7355; color: white; padding: 10px 20px; border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
     .btn-action:hover { opacity: 0.9; transform: translateY(-1px); }
     .input-num { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; width: 100%; text-align: right; }
-    .category-pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #e8ddd2; }
+    .category-pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #e8ddd2; transition: 0.2s; }
     .category-active { background: #8b7355; color: white; border-color: #8b7355; }
   </style>
 </head>
@@ -25,7 +25,7 @@
     <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h1 class="text-3xl font-bold text-[#8b7355]">AI Demand for Coffee Shop</h1>
-        <p class="text-gray-500 text-sm">ระบบจัดการร้านและวิเคราะห์สต็อก</p>
+        <p class="text-gray-500 text-sm">ระบบจัดการร้านและพยากรณ์สต็อก (รองรับยอดติดลบ)</p>
       </div>
       <div class="flex gap-2">
         <button onclick="resetSystem()" class="text-xs text-red-500 hover:underline">ล้างข้อมูลทั้งหมด</button>
@@ -56,9 +56,9 @@
         <div id="sales-inputs" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
         
         <div class="mt-8 pt-6 border-t flex justify-end gap-4">
-          <button onclick="clearInputs()" class="px-6 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-lg">ล้างค่า</button>
+          <button onclick="clearInputs()" class="px-6 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-lg transition">ล้างค่า</button>
           <button onclick="processDailySales()" class="btn-action shadow-lg bg-[#8b7355]">
-            <i data-lucide="check-circle"></i> บันทึกยอดและตัดสต็อก
+            <i data-lucide="plus-circle"></i> บันทึกยอดขาย
           </button>
         </div>
       </div>
@@ -67,8 +67,8 @@
     <div id="tab-stock" class="hidden space-y-6">
       <div class="card-base p-6">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="package"></i> ยอดสต็อกคงเหลือ</h2>
-          <button onclick="updateInventoryFromCheck()" class="btn-action bg-green-600">อัปเดตสต็อกจากการนับจริง</button>
+          <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="package"></i> สต็อกคงเหลือ</h2>
+          <button onclick="updateInventoryFromCheck()" class="btn-action bg-green-600">อัปเดตสต็อกจริง</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left">
@@ -114,7 +114,8 @@
           <div id="forecast-list" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
         </div>
         <div class="card-base p-6 border-red-200">
-          <h2 class="text-xl font-bold mb-4 text-red-600 flex items-center gap-2"><i data-lucide="shopping-bag"></i> วัตถุดิบที่ต้องเตรียมซื้อ</h2>
+          <h2 class="text-xl font-bold mb-4 text-red-600 flex items-center gap-2"><i data-lucide="shopping-bag"></i> วัตถุดิบที่ต้องสั่งเพิ่ม</h2>
+          <p class="text-xs text-gray-400 mb-4">*คำนวณจากยอดพยากรณ์ 7 วัน + ชดเชยส่วนที่ติดลบ</p>
           <div id="shopping-list" class="space-y-3"></div>
         </div>
       </div>
@@ -122,37 +123,33 @@
   </div>
 
   <script>
-    // --- Configuration & Master Data ---
+    // --- Master Data ---
     const recipes = {
       "Espresso": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30},
       "Americano": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30},
-      "Americano Honey": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Honey (ml)": 30},
       "Latte": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 180},
       "Mocha": {cat:"Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Coffee Bean (g)": 30, "Fresh Milk (ml)": 150, "Chocolate (ml)": 30},
-      "Pure Matcha": {cat:"Non-Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Matcha (ml)": 50},
       "Thai Tea": {cat:"Non-Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Fresh Milk (ml)": 150, "Thai Tea (ml)": 80},
+      "Pure Matcha": {cat:"Non-Coffee", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Matcha (ml)": 50},
       "Orange Soda": {cat:"Soda", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Orange (ml)": 30, "Soda (ml)": 180},
-      "Yuzu Soda": {cat:"Soda", "Cup (pc)": 1, "Lid (pc)": 1, "Straw (pc)": 1, "Ice (g)": 120, "Syrup (ml)": 30, "Yuzu (ml)": 30, "Soda (ml)": 180},
       "Topping Boba": {cat:"Topping", "Boba (g)": 60},
       "Topping Cream Cheese": {cat:"Topping", "Cream Cheese (g)": 40}
-      // ... (เมนูอื่นๆ เพิ่มเติมได้ที่นี่)
     };
 
     let inventory = {
-      "Cup (pc)": 1000, "Lid (pc)": 1000, "Straw (pc)": 1000, "Ice (g)": 50000, "Syrup (ml)": 10000,
-      "Coffee Bean (g)": 5000, "Fresh Milk (ml)": 20000, "Thai Tea (ml)": 5000, "Chocolate (ml)": 3000, 
-      "Matcha (ml)": 2000, "Honey (ml)": 2000, "Orange (ml)": 2000, "Yuzu (ml)": 1000, 
-      "Soda (ml)": 15000, "Boba (g)": 5000, "Cream Cheese (g)": 2000
+      "Cup (pc)": 100, "Lid (pc)": 100, "Straw (pc)": 100, "Ice (g)": 5000, "Syrup (ml)": 1000,
+      "Coffee Bean (g)": 1000, "Fresh Milk (ml)": 2000, "Thai Tea (ml)": 1000, "Chocolate (ml)": 500, 
+      "Matcha (ml)": 300, "Orange (ml)": 500, "Soda (ml)": 2000, "Boba (g)": 1000, "Cream Cheese (g)": 500
     };
 
     let histData = Object.keys(recipes).map(menu => ({
       menu: menu,
-      jan: Math.floor(Math.random() * 100),
-      feb: Math.floor(Math.random() * 100),
-      mar: Math.floor(Math.random() * 100)
+      jan: Math.floor(Math.random() * 50),
+      feb: Math.floor(Math.random() * 50),
+      mar: Math.floor(Math.random() * 50)
     }));
 
-    // --- Core Functions ---
+    // --- System Logic ---
 
     function init() {
       loadLocalStorage();
@@ -178,14 +175,14 @@
     }
 
     function resetSystem() {
-      if(confirm("คำเตือน: ข้อมูลทั้งหมดจะถูกล้างและกลับไปเป็นค่าเริ่มต้น ยืนยันหรือไม่?")) {
+      if(confirm("คำเตือน: ข้อมูลจะกลับไปเป็นค่าเริ่มต้น ยืนยันหรือไม่?")) {
         localStorage.clear();
         location.reload();
       }
     }
 
     function updateTimestamp() {
-      document.getElementById('last-update').innerText = "อัปเดตล่าสุด: " + new Date().toLocaleTimeString();
+      document.getElementById('last-update').innerText = "Update: " + new Date().toLocaleTimeString();
     }
 
     function switchTab(tabId) {
@@ -219,42 +216,38 @@
       document.querySelectorAll('#sales-inputs input').forEach(input => input.value = "");
     }
 
+    // ฟังก์ชันที่แก้ไข: ยอมให้สต็อกติดลบได้
     function processDailySales() {
       let salesToProcess = [];
-      let tempInventory = JSON.parse(JSON.stringify(inventory));
+      let hasInput = false;
 
-      // Check for validation and stock sufficiency
       for (const menu in recipes) {
         const input = document.getElementById(`sale-${menu}`);
         const qty = input ? parseInt(input.value) || 0 : 0;
         
         if(qty > 0) {
+          hasInput = true;
+          // ตัดสต็อกทันที (อนุญาตให้ติดลบ)
           for (let [ing, amt] of Object.entries(recipes[menu])) {
             if(ing === 'cat') continue;
-            if(tempInventory[ing] !== undefined) {
-              tempInventory[ing] -= (amt * qty);
-              if(tempInventory[ing] < 0) {
-                alert(`สต็อกไม่พอ! ${ing} ขาดอีก ${Math.abs(tempInventory[ing])}`);
-                return;
-              }
+            if(inventory[ing] !== undefined) {
+              inventory[ing] -= (amt * qty);
             }
           }
           salesToProcess.push({menu, qty});
         }
       }
 
-      if(salesToProcess.length === 0) return alert("กรุณาระบุจำนวนยอดขาย");
+      if(!hasInput) return alert("กรุณาระบุจำนวนยอดขาย");
 
-      if(confirm(`ยืนยันการบันทึก ${salesToProcess.length} รายการ?`)) {
-        inventory = tempInventory;
-        // Update history (simplified: add to the latest month 'mar')
+      if(confirm(`ยืนยันการบันทึกยอดขาย? (ระบบจะตัดสต็อกทันทีแม้จะติดลบ)`)) {
         salesToProcess.forEach(item => {
           let target = histData.find(h => h.menu === item.menu);
           if(target) target.mar += item.qty;
         });
 
         saveLocalStorage();
-        alert("บันทึกสำเร็จและตัดสต็อกเรียบร้อย");
+        alert("บันทึกสำเร็จ! ตรวจสอบรายการของขาดได้ที่หน้าพยากรณ์");
         clearInputs();
         renderStockTable();
         renderHistory();
@@ -266,13 +259,18 @@
       const body = document.getElementById('stock-table-body');
       body.innerHTML = "";
       for (let [ing, qty] of Object.entries(inventory)) {
-        const isLow = qty < 500; 
-        const status = isLow ? '<span class="px-2 py-1 bg-red-100 text-red-600 rounded-md text-[10px] font-bold">ใกล้หมด</span>' : '<span class="text-green-500 text-[10px]">ปกติ</span>';
+        const isOut = qty <= 0;
+        const isLow = qty > 0 && qty < 300;
+        
+        let status = '<span class="text-green-500 text-[10px]">ปกติ</span>';
+        if(isOut) status = '<span class="px-2 py-1 bg-red-100 text-red-600 rounded-md text-[10px] font-bold">ของหมด/ติดลบ</span>';
+        else if(isLow) status = '<span class="px-2 py-1 bg-orange-100 text-orange-600 rounded-md text-[10px] font-bold">ใกล้หมด</span>';
+
         body.innerHTML += `
           <tr>
             <td class="p-4 text-sm font-medium">${ing}</td>
-            <td class="p-4 font-mono text-sm ${isLow ? 'text-red-600 font-bold' : ''}">${qty.toLocaleString()}</td>
-            <td class="p-4"><input type="number" id="check-${ing}" class="input-num text-xs border-blue-50" placeholder="ระบุเลขใหม่"></td>
+            <td class="p-4 font-mono text-sm ${isOut ? 'text-red-600 font-bold' : ''}">${qty.toLocaleString()}</td>
+            <td class="p-4"><input type="number" id="check-${ing}" class="input-num text-xs border-blue-50" placeholder="นับได้เท่าไหร่?"></td>
             <td class="p-4">${status}</td>
           </tr>
         `;
@@ -290,7 +288,7 @@
       }
       if(count > 0) {
         saveLocalStorage();
-        alert("อัปเดตสต็อกจริงแล้ว " + count + " รายการ");
+        alert("อัปเดตสต็อกจริงสำเร็จ");
         renderStockTable();
         renderForecast();
       }
@@ -318,32 +316,45 @@
       const fList = document.getElementById('forecast-list');
       const sList = document.getElementById('shopping-list');
       fList.innerHTML = ""; sList.innerHTML = "";
-      let totalUsageNeeded = {};
+      let totalUsageNeededPerDay = {};
 
+      // 1. คำนวณหาค่าเฉลี่ยการใช้วัตถุดิบต่อวันจากประวัติ 90 วัน
       histData.forEach(d => {
-        const avg = Math.ceil((d.jan + d.feb + d.mar) / 90);
-        const forecast = Math.ceil(avg * 1.15); 
-        if(forecast > 0) {
-           fList.innerHTML += `<div class="flex justify-between border-b border-gray-50 pb-1 text-xs"><span>${d.menu}</span><span class="font-bold text-purple-600">${forecast}</span></div>`;
+        const avgDailySales = (d.jan + d.feb + d.mar) / 90;
+        const forecastTomorrow = Math.ceil(avgDailySales * 1.15); // เผื่อ 15%
+        
+        if(forecastTomorrow > 0) {
+           fList.innerHTML += `<div class="flex justify-between border-b border-gray-50 pb-1 text-xs"><span>${d.menu}</span><span class="font-bold text-purple-600">${forecastTomorrow}</span></div>`;
            if(recipes[d.menu]) {
-             for(let [ing, amt] of Object.entries(recipes[d.menu])) {
-               if(ing !== 'cat') totalUsageNeeded[ing] = (totalUsageNeeded[ing] || 0) + (amt * forecast);
+             for(let [ing, amt] of Object.entries(recipes[name = d.menu])) {
+               if(ing !== 'cat') totalUsageNeededPerDay[ing] = (totalUsageNeededPerDay[ing] || 0) + (amt * forecastTomorrow);
              }
            }
         }
       });
 
+      // 2. คำนวณยอดจัดซื้อ: (ที่ต้องใช้ใน 7 วันข้างหน้า) + (ส่วนที่ติดลบอยู่)
       let needsPurchase = false;
-      for(let [ing, need] of Object.entries(totalUsageNeeded)) {
-        if(inventory[ing] < (need * 3)) { // ถ้าสต็อกเหลือน้อยกว่าที่ต้องใช้ 3 วัน
-          const buyAmt = Math.ceil((need * 7) - inventory[ing]); 
+      for(let [ing, needPerDay] of Object.entries(totalUsageNeededPerDay)) {
+        const stock = inventory[ing];
+        const needSevenDays = needPerDay * 7;
+        
+        // เงื่อนไขสั่งซื้อ: ถ้าสต็อกเหลือน้อยกว่าที่ต้องใช้ใน 3 วัน หรือสต็อกติดลบ
+        if(stock < (needPerDay * 3)) {
+          // ยอดสั่งซื้อ = (เป้าหมาย 7 วัน) - (สต็อกปัจจุบัน) 
+          // ถ้าสต็อกติดลบ เช่น -500 การลบด้วยเลขลบจะกลายเป็นการบวกเพิ่ม (เช่น 1000 - (-500) = 1500)
+          const buyAmt = Math.ceil(needSevenDays - stock); 
           if(buyAmt > 0) {
             needsPurchase = true;
-            sList.innerHTML += `<div class="flex justify-between p-2 bg-red-50 rounded text-xs border border-red-100"><span>${ing}</span><span class="font-bold text-red-600">+ ${buyAmt.toLocaleString()}</span></div>`;
+            sList.innerHTML += `
+              <div class="flex justify-between p-2 bg-red-50 rounded text-xs border border-red-100">
+                <span class="font-medium">${ing}</span>
+                <span class="font-bold text-red-600">+ ${buyAmt.toLocaleString()}</span>
+              </div>`;
           }
         }
       }
-      if(!needsPurchase) sList.innerHTML = "<div class='text-green-600 text-center py-10'><i data-lucide='smile' class='mx-auto mb-2'></i> สต็อกเพียงพอสำหรับสัปดาห์นี้</div>";
+      if(!needsPurchase) sList.innerHTML = "<div class='text-green-600 text-center py-10'><i data-lucide='check-circle' class='mx-auto mb-2'></i> สต็อกเพียงพอแล้ว</div>";
       lucide.createIcons();
     }
 
